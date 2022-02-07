@@ -10,8 +10,19 @@ contract ERC20Proxy is
     IAssetProxy
 {
     using LibBytes for bytes;
+
+    mapping (address => bool) public whitelistedTokens;
+
     // Id of this proxy.
     bytes4 constant internal PROXY_ID = bytes4(keccak256("ERC20Token(address)"));
+
+    function addToken(address token) external onlyOwner {
+        whitelistedTokens[token] = true;
+    }
+
+    function removeToken(address token) external onlyOwner {
+        whitelistedTokens[token] = false;
+    }
 
     function transferFrom(
         bytes calldata assetData,
@@ -31,6 +42,8 @@ contract ERC20Proxy is
             assetData.sliceDestructive(4, assetData.length),
             (address)
         );
+
+        require(whitelistedTokens[erc20TokenAddress], 'ERC20PROXY: token is not whitelisted');
         // solhint-enable indent
 
         // Execute `safeBatchTransferFrom` call

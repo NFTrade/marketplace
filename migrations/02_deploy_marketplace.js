@@ -13,7 +13,7 @@ const deploy = async (deployer, network, accounts) => {
   // Ether token
   await deployer.deploy(WETH);
 
-  const etherToken = await WETH.deployed;
+  const etherToken = await WETH.deployed();
 
   await deployer.deploy(LibAssetData);
 
@@ -40,6 +40,8 @@ const deploy = async (deployer, network, accounts) => {
   await exchange.registerAssetProxy(erc20Proxy.address);
   await exchange.registerAssetProxy(erc721Proxy.address);
   await exchange.registerAssetProxy(erc1155Proxy.address);
+
+  await erc20Proxy.addToken(etherToken.address);
 
   /* await exchange.setProtocolFeeMultiplier(new BigNumber(0));
   await exchange.setNFTradeTradeFee(new BigNumber(0));
