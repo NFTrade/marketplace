@@ -15,6 +15,10 @@ const deploy = async (deployer, network, accounts) => {
 
   const etherToken = await WETH.deployed;
 
+  await deployer.deploy(LibAssetData);
+
+  await deployer.link(LibAssetData, ERC71155Proxy);
+
   await deployer.deploy(ERC20Proxy);
   await deployer.deploy(ERC721Proxy);
   await deployer.deploy(ERC71155Proxy);
@@ -36,8 +40,6 @@ const deploy = async (deployer, network, accounts) => {
   await exchange.registerAssetProxy(erc20Proxy.address);
   await exchange.registerAssetProxy(erc721Proxy.address);
   await exchange.registerAssetProxy(erc1155Proxy.address);
-
-  await deployer.deploy(LibAssetData);
 
   /* await exchange.setProtocolFeeMultiplier(new BigNumber(0));
   await exchange.setNFTradeTradeFee(new BigNumber(0));

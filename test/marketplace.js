@@ -8,9 +8,6 @@ const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
 const { signatureUtils } = require('signature-utils');
 
-const Provider = require('@truffle/hdwallet-provider');
-const { signTyped } = require('./signature');
-
 const chainId = 5777;
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -27,7 +24,6 @@ const generatePseudoRandom256BitNumber = () => {
   const randomNumber = BigNumber.random(MAX_DIGITS_IN_UNSIGNED_256_INT);
   const factor = new BigNumber(10).pow(MAX_DIGITS_IN_UNSIGNED_256_INT - 1);
   const randomNumberScaledTo256Bits = randomNumber.times(factor).integerValue();
-  console.log(randomNumber.toString(), factor.toString());
   return randomNumberScaledTo256Bits;
 };
 
@@ -54,9 +50,6 @@ contract('Exchange', (accounts) => {
 
     exchange.setProtocolFeeMultiplier(new BigNumber(5));
     exchange.setProtocolFeeCollectorAddress(accounts[0]);
-
-    // await token.transfer(user, 1000, { from: owner });
-    // reward = await NonTradableERC20.deployed();
   });
 
   const createNFT = async (from) => {
@@ -93,7 +86,7 @@ contract('Exchange', (accounts) => {
         senderAddress        : NULL_ADDRESS,
         feeRecipientAddress  : NULL_ADDRESS,
         expirationTimeSeconds: tenYearsInSeconds.toString(),
-        salt                 : '39536229518434207272535632305173722216163245335529678998642844331061221635970',
+        salt                 : generatePseudoRandom256BitNumber().toString(),
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,

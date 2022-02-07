@@ -2,6 +2,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../Utils/LibBytes.sol";
+import "../Utils/LibAssetData.sol";
 import "../Utils/LibSafeMath.sol";
 import "../Authorize/Authorizable.sol";
 import "./interfaces/IAssetProxy.sol";
@@ -35,19 +36,18 @@ contract ERC1155Proxy is
     {
         // Decode params from `assetData`
         // solhint-disable indent
-        /* (
+
+        (
+            bytes4 assetProxyId,
             address erc1155TokenAddress,
             uint256[] memory ids,
-            uint256 values,
+            uint256[] memory values,
             bytes memory data
-        ) = abi.decode(
-            assetData.sliceDestructive(4, assetData.length),
-            (address, uint256[], uint256, bytes)
-        ); */
+        ) = LibAssetData.decodeERC1155AssetData(assetData);
         // solhint-enable indent
 
         // Scale values up by `amount`
-        /* uint256 length = values.length;
+        uint256 length = values.length;
         uint256[] memory scaledValues = new uint256[](length);
         for (uint256 i = 0; i != length; i++) {
             // We write the scaled values to an unused location in memory in order
@@ -65,7 +65,7 @@ contract ERC1155Proxy is
             ids,
             scaledValues,
             data
-        ); */
+        );
     }
 
     /// @dev Gets the proxy id associated with the proxy address.
