@@ -1,8 +1,6 @@
 pragma solidity ^0.8.4;
 
 import "../../Utils/LibSafeMath.sol";
-import "../../Utils/LibRichErrors.sol";
-import "./LibMathRichErrors.sol";
 
 
 library LibMath {
@@ -29,11 +27,7 @@ library LibMath {
                 denominator,
                 target
         )) {
-            LibRichErrors.rrevert(LibMathRichErrors.RoundingError(
-                numerator,
-                denominator,
-                target
-            ));
+            revert('LIBMATH: rounding error');
         }
 
         partialAmount = numerator.safeMul(target).safeDiv(denominator);
@@ -60,11 +54,7 @@ library LibMath {
                 denominator,
                 target
         )) {
-            LibRichErrors.rrevert(LibMathRichErrors.RoundingError(
-                numerator,
-                denominator,
-                target
-            ));
+            revert('LIBMATH: rounding error');
         }
 
         // safeDiv computes `floor(a / b)`. We use the identity (a, b integer):
@@ -134,7 +124,7 @@ library LibMath {
         returns (bool isError)
     {
         if (denominator == 0) {
-            LibRichErrors.rrevert(LibMathRichErrors.DivisionByZeroError());
+            revert('LIBMATH: division by zero');
         }
 
         // The absolute rounding error is the difference between the rounded
@@ -187,7 +177,7 @@ library LibMath {
         returns (bool isError)
     {
         if (denominator == 0) {
-            LibRichErrors.rrevert(LibMathRichErrors.DivisionByZeroError());
+            revert('LIBMATH: division by zero');
         }
 
         // See the comments in `isRoundingError`.

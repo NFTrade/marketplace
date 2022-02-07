@@ -1,14 +1,12 @@
 pragma solidity ^0.8.4;
 
 import "../Utils/LibBytes.sol";
-import "../Utils/LibRichErrors.sol";
 import "../Utils/LibSafeMath.sol";
 import "../Utils/Refundable.sol";
 import "./Libs/LibFillResults.sol";
 import "./Libs/LibMath.sol";
 import "./Libs/LibOrder.sol";
 import "./Libs/LibEIP712ExchangeDomain.sol";
-import "./Libs/LibExchangeRichErrors.sol";
 import "./interfaces/IExchangeCore.sol";
 import "./MixinAssetProxyDispatcher.sol";
 import "./MixinProtocolFees.sol";
@@ -58,11 +56,7 @@ abstract contract MixinExchangeCore is
 
         // Ensure orderEpoch is monotonically increasing
         if (newOrderEpoch <= oldOrderEpoch) {
-            LibRichErrors.rrevert(LibExchangeRichErrors.OrderEpochError(
-                makerAddress,
-                orderSenderAddress,
-                oldOrderEpoch
-            ));
+            revert('EXCHANGE: order epoch error');
         }
 
         // Update orderEpoch
@@ -367,22 +361,14 @@ abstract contract MixinExchangeCore is
         // Validate sender is allowed to cancel this order
         if (order.senderAddress != address(0)) {
             if (order.senderAddress != msg.sender) {
-                LibRichErrors.rrevert(LibExchangeRichErrors.ExchangeInvalidContextError(
-                    LibExchangeRichErrors.ExchangeContextErrorCodes.INVALID_SENDER,
-                    orderInfo.orderHash,
-                    msg.sender
-                ));
+                revert('EXCHANGE: invalid sender');
             }
         }
 
         // Validate transaction signed by maker
         address makerAddress = msg.sender;
         if (order.makerAddress != makerAddress) {
-            LibRichErrors.rrevert(LibExchangeRichErrors.ExchangeInvalidContextError(
-                LibExchangeRichErrors.ExchangeContextErrorCodes.INVALID_MAKER,
-                orderInfo.orderHash,
-                makerAddress
-            ));
+            revert('EXCHANGE: invalid maker');
         }
     }
 

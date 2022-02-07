@@ -2,8 +2,6 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../Utils/LibBytes.sol";
-import "../Utils/LibRichErrors.sol";
-import "./Libs/LibExchangeRichErrors.sol";
 import "../Proxies/interfaces/IAssetData.sol";
 import "../Proxies/interfaces/IAssetProxy.sol";
 import "./interfaces/IAssetProxyDispatcher.sol";
@@ -30,10 +28,7 @@ contract MixinAssetProxyDispatcher is
         bytes4 assetProxyId = IAssetProxy(assetProxy).getProxyId();
         address currentAssetProxy = _assetProxies[assetProxyId];
         if (currentAssetProxy != address(0)) {
-            LibRichErrors.rrevert(LibExchangeRichErrors.AssetProxyExistsError(
-                assetProxyId,
-                currentAssetProxy
-            ));
+            revert('ASSET PROXY: already registered');
         }
 
         // Add asset proxy and log registration.

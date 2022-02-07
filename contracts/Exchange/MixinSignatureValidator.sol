@@ -2,12 +2,10 @@ pragma solidity ^0.8.4;
 
 import "../Utils/LibBytes.sol";
 import "../Utils/LibEIP1271.sol";
-import "../Utils/LibRichErrors.sol";
 import "../Utils/Refundable.sol";
 import "./Libs/LibOrder.sol";
 import "./Libs/LibTransaction.sol";
 import "./Libs/LibEIP712ExchangeDomain.sol";
-import "./Libs/LibExchangeRichErrors.sol";
 import "./interfaces/IWallet.sol";
 import "./interfaces/IEIP1271Wallet.sol";
 import "./interfaces/ISignatureValidator.sol";

@@ -1,8 +1,5 @@
 pragma solidity ^0.8.4;
 
-import "./LibBytesRichErrors.sol";
-import "./LibRichErrors.sol";
-
 
 library LibBytes {
 
@@ -162,18 +159,10 @@ library LibBytes {
         // Ensure that the from and to positions are valid positions for a slice within
         // the byte array that is being used.
         if (from > to) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.FromLessThanOrEqualsToRequired,
-                from,
-                to
-            ));
+            revert('LIB BYTES: from less than or equals to required');
         }
         if (to > b.length) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.ToLessThanOrEqualsLengthRequired,
-                to,
-                b.length
-            ));
+            revert('LIB BYTES: to less than or equals length required');
         }
 
         // Create a new bytes structure and copy contents
@@ -204,18 +193,10 @@ library LibBytes {
         // Ensure that the from and to positions are valid positions for a slice within
         // the byte array that is being used.
         if (from > to) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.FromLessThanOrEqualsToRequired,
-                from,
-                to
-            ));
+            revert('LIB BYTES: from less than or equals to required');
         }
         if (to > b.length) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.ToLessThanOrEqualsLengthRequired,
-                to,
-                b.length
-            ));
+            revert('LIB BYTES: to less than or equals length required');
         }
 
         // Create a new bytes structure around [from, to) in-place.
@@ -235,11 +216,7 @@ library LibBytes {
         returns (bytes1 result)
     {
         if (b.length == 0) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.LengthGreaterThanZeroRequired,
-                b.length,
-                0
-            ));
+            revert('LIB BYTES: length freater than zero required');
         }
 
         // Store last byte.
@@ -284,11 +261,7 @@ library LibBytes {
         returns (address result)
     {
         if (b.length < index + 20) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.LengthGreaterThanOrEqualsTwentyRequired,
-                b.length,
-                index + 20 // 20 is length of address
-            ));
+            revert('LIB BYTES: length freated than or equals twenty required');
         }
 
         // Add offset to index:
@@ -319,11 +292,7 @@ library LibBytes {
         pure
     {
         if (b.length < index + 20) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.LengthGreaterThanOrEqualsTwentyRequired,
-                b.length,
-                index + 20 // 20 is length of address
-            ));
+            revert('LIB BYTES: length greater than or equals twenty required');
         }
 
         // Add offset to index:
@@ -368,11 +337,7 @@ library LibBytes {
         returns (bytes32 result)
     {
         if (b.length < index + 32) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.LengthGreaterThanOrEqualsThirtyTwoRequired,
-                b.length,
-                index + 32
-            ));
+            revert('LIB BYTES: length greater than or equals thirty two required');
         }
 
         // Arrays are prefixed by a 256 bit length parameter
@@ -398,11 +363,7 @@ library LibBytes {
         pure
     {
         if (b.length < index + 32) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.LengthGreaterThanOrEqualsThirtyTwoRequired,
-                b.length,
-                index + 32
-            ));
+            revert('LIB BYTES: length greater than or equals thirty two required');
         }
 
         // Arrays are prefixed by a 256 bit length parameter
@@ -458,11 +419,7 @@ library LibBytes {
         returns (bytes4 result)
     {
         if (b.length < index + 4) {
-            LibRichErrors.rrevert(LibBytesRichErrors.InvalidByteOperationError(
-                LibBytesRichErrors.InvalidByteOperationErrorCodes.LengthGreaterThanOrEqualsFourRequired,
-                b.length,
-                index + 4
-            ));
+            revert('LIB BYTES: length greater than or equals four required');
         }
 
         // Arrays are prefixed by a 32 byte length field
