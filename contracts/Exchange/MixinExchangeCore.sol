@@ -325,31 +325,20 @@ abstract contract MixinExchangeCore is
     {
         // An order can only be filled if its status is FILLABLE.
         if (orderInfo.orderStatus != LibOrder.OrderStatus.FILLABLE) {
-            LibRichErrors.rrevert(LibExchangeRichErrors.OrderStatusError(
-                orderInfo.orderHash,
-                LibOrder.OrderStatus(orderInfo.orderStatus)
-            ));
+            revert('EXCHANGE: status not fillable');
         }
 
         // Validate sender is allowed to fill this order
         if (order.senderAddress != address(0)) {
             if (order.senderAddress != msg.sender) {
-                LibRichErrors.rrevert(LibExchangeRichErrors.ExchangeInvalidContextError(
-                    LibExchangeRichErrors.ExchangeContextErrorCodes.INVALID_SENDER,
-                    orderInfo.orderHash,
-                    msg.sender
-                ));
+                revert('EXCHANGE: invalid sender');
             }
         }
 
         // Validate taker is allowed to fill this order
         if (order.takerAddress != address(0)) {
             if (order.takerAddress != takerAddress) {
-                LibRichErrors.rrevert(LibExchangeRichErrors.ExchangeInvalidContextError(
-                    LibExchangeRichErrors.ExchangeContextErrorCodes.INVALID_TAKER,
-                    orderInfo.orderHash,
-                    takerAddress
-                ));
+                revert('EXCHANGE: invalid taker');
             }
         }
 
@@ -360,12 +349,7 @@ abstract contract MixinExchangeCore is
                 signature
             )
         ) {
-            LibRichErrors.rrevert(LibExchangeRichErrors.SignatureError(
-                LibExchangeRichErrors.SignatureErrorCodes.BAD_ORDER_SIGNATURE,
-                orderInfo.orderHash,
-                order.makerAddress,
-                signature
-            ));
+            revert('EXCHANGE: invalid signature');
         }
     }
 

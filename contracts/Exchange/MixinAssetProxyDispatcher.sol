@@ -76,11 +76,7 @@ contract MixinAssetProxyDispatcher is
 
             // Ensure assetData is padded to 32 bytes (excluding the id) and is at least 4 bytes long
             if (assetData.length % 32 != 4) {
-                LibRichErrors.rrevert(LibExchangeRichErrors.AssetProxyDispatchError(
-                    LibExchangeRichErrors.AssetProxyDispatchErrorCodes.INVALID_ASSET_DATA_LENGTH,
-                    orderHash,
-                    assetData
-                ));
+                revert('ASSET PROXY: invalid length');
             }
 
             // Lookup assetProxy.
@@ -89,11 +85,7 @@ contract MixinAssetProxyDispatcher is
 
             // Ensure that assetProxy exists
             if (assetProxy == address(0)) {
-                LibRichErrors.rrevert(LibExchangeRichErrors.AssetProxyDispatchError(
-                    LibExchangeRichErrors.AssetProxyDispatchErrorCodes.UNKNOWN_ASSET_PROXY,
-                    orderHash,
-                    assetData
-                ));
+                revert('ASSET PROXY: unknown');
             }
 
             // Construct the calldata for the transferFrom call.
@@ -110,12 +102,21 @@ contract MixinAssetProxyDispatcher is
 
             // If the transaction did not succeed, revert with the returned data.
             if (!didSucceed) {
-                LibRichErrors.rrevert(LibExchangeRichErrors.AssetProxyTransferError(
-                    orderHash,
-                    assetData,
-                    returnData
-                ));
+                revert(toString(assetData));
             }
         }
     }
+
+    function toString(bytes memory data) public pure returns(string memory) {
+    bytes memory alphabet = "0123456789abcdef";
+
+    bytes memory str = new bytes(2 + data.length * 2);
+    str[0] = "0";
+    str[1] = "x";
+    for (uint i = 0; i < data.length; i++) {
+        str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
+        str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
+    }
+    return string(str);
+}
 }

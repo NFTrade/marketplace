@@ -29,7 +29,7 @@ contract ERC721Proxy is
             address erc721TokenAddress,
             uint256 tokenId
         ) = abi.decode( 
-            assetData.sliceDestructive(2, assetData.length),
+            assetData.sliceDestructive(4, assetData.length),
             (address, uint256)
         );
         // solhint-enable indent

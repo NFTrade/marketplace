@@ -28,7 +28,7 @@ contract ERC20Proxy is
         (
             address erc20TokenAddress
         ) = abi.decode( 
-            assetData.sliceDestructive(1, assetData.length),
+            assetData.sliceDestructive(4, assetData.length),
             (address)
         );
         // solhint-enable indent

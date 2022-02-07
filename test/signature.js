@@ -6,6 +6,85 @@ const {
 const BigNumber = require('bignumber.js');
 
 const ethers = require('ethers');
+
+const EIP712Domain = [
+  {
+    name: 'name',
+    type: 'string',
+  },
+  {
+    name: 'version',
+    type: 'string',
+  },
+  {
+    name: 'chainId',
+    type: 'uint256',
+  },
+  {
+    name: 'verifyingContract',
+    type: 'address',
+  },
+];
+
+const Order = [
+  {
+    name: 'makerAddress',
+    type: 'address',
+  },
+  {
+    name: 'takerAddress',
+    type: 'address',
+  },
+  {
+    name: 'feeRecipientAddress',
+    type: 'address',
+  },
+  {
+    name: 'senderAddress',
+    type: 'address',
+  },
+  {
+    name: 'makerAssetAmount',
+    type: 'uint256',
+  },
+  {
+    name: 'takerAssetAmount',
+    type: 'uint256',
+  },
+  {
+    name: 'makerFee',
+    type: 'uint256',
+  },
+  {
+    name: 'takerFee',
+    type: 'uint256',
+  },
+  {
+    name: 'expirationTimeSeconds',
+    type: 'uint256',
+  },
+  {
+    name: 'salt',
+    type: 'uint256',
+  },
+  {
+    name: 'makerAssetData',
+    type: 'bytes',
+  },
+  {
+    name: 'takerAssetData',
+    type: 'bytes',
+  },
+  {
+    name: 'makerFeeAssetData',
+    type: 'bytes',
+  },
+  {
+    name: 'takerFeeAssetData',
+    type: 'bytes',
+  },
+];
+
 /**
  *   @signTypedDataUtils - utils for signature hexing/hashing/encoding
  */
@@ -167,82 +246,8 @@ const signEth = async (provider, address, payload) => {
 exports.signTyped = async (provider, order, from, verifyingContract) => {
   const typedData = {
     types: {
-      EIP712Domain: [
-        {
-          name: 'name',
-          type: 'string',
-        },
-        {
-          name: 'version',
-          type: 'string',
-        },
-        {
-          name: 'chainId',
-          type: 'uint256',
-        },
-        {
-          name: 'verifyingContract',
-          type: 'address',
-        },
-      ],
-      Order: [
-        {
-          name: 'makerAddress',
-          type: 'address',
-        },
-        {
-          name: 'takerAddress',
-          type: 'address',
-        },
-        {
-          name: 'feeRecipientAddress',
-          type: 'address',
-        },
-        {
-          name: 'senderAddress',
-          type: 'address',
-        },
-        {
-          name: 'makerAssetAmount',
-          type: 'uint256',
-        },
-        {
-          name: 'takerAssetAmount',
-          type: 'uint256',
-        },
-        {
-          name: 'makerFee',
-          type: 'uint256',
-        },
-        {
-          name: 'takerFee',
-          type: 'uint256',
-        },
-        {
-          name: 'expirationTimeSeconds',
-          type: 'uint256',
-        },
-        {
-          name: 'salt',
-          type: 'uint256',
-        },
-        {
-          name: 'makerAssetData',
-          type: 'bytes',
-        },
-        {
-          name: 'takerAssetData',
-          type: 'bytes',
-        },
-        {
-          name: 'makerFeeAssetData',
-          type: 'bytes',
-        },
-        {
-          name: 'takerFeeAssetData',
-          type: 'bytes',
-        },
-      ],
+      EIP712Domain,
+      Order,
     },
     domain: {
       name   : 'NFTrade',

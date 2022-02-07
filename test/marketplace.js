@@ -6,16 +6,20 @@ const LibAssetData = artifacts.require('LibAssetData');
 const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
+const { signatureUtils } = require('signature-utils');
 
 const Provider = require('@truffle/hdwallet-provider');
 const { signTyped } = require('./signature');
 
-const chainId = 31337;
+const chainId = 5777;
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 const NULL_BYTES = '0x';
 const ZERO = new BigNumber(0).toString();
 
+web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
+
+BigNumber.config({ DECIMAL_PLACES: 100 });
 const tenYearsInSeconds = new BigNumber(Date.now() + 315569520).toString();
 const MAX_DIGITS_IN_UNSIGNED_256_INT = 78;
 
@@ -23,11 +27,9 @@ const generatePseudoRandom256BitNumber = () => {
   const randomNumber = BigNumber.random(MAX_DIGITS_IN_UNSIGNED_256_INT);
   const factor = new BigNumber(10).pow(MAX_DIGITS_IN_UNSIGNED_256_INT - 1);
   const randomNumberScaledTo256Bits = randomNumber.times(factor).integerValue();
+  console.log(randomNumber.toString(), factor.toString());
   return randomNumberScaledTo256Bits;
 };
-
-// a little hack
-web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 
 contract('Exchange', (accounts) => {
   let exchange;
@@ -50,9 +52,8 @@ contract('Exchange', (accounts) => {
 
     dummyerc721 = await NFT.new('NFT Test', 'NFTT');
 
-    exchange.setProtocolFeeMultiplier(new BigNumber(0));
-    exchange.setNFTradeTradeFee(new BigNumber(150));
-    exchange.setNFTradeFeeMultiplier(new BigNumber(150));
+    exchange.setProtocolFeeMultiplier(new BigNumber(5));
+    exchange.setProtocolFeeCollectorAddress(accounts[0]);
 
     // await token.transfer(user, 1000, { from: owner });
     // reward = await NonTradableERC20.deployed();
@@ -92,7 +93,7 @@ contract('Exchange', (accounts) => {
         senderAddress        : NULL_ADDRESS,
         feeRecipientAddress  : NULL_ADDRESS,
         expirationTimeSeconds: tenYearsInSeconds.toString(),
-        salt                 : generatePseudoRandom256BitNumber().toString(),
+        salt                 : '39536229518434207272535632305173722216163245335529678998642844331061221635970',
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,
@@ -105,33 +106,51 @@ contract('Exchange', (accounts) => {
 
       let signedOrder;
       try {
+        // newOrder.chainId = String(newOrder.chainId);
         // Generate the order hash and sign it
-        signedOrder = await signTyped(
+        /* signedOrder = await signTyped(
           provider,
           newOrder,
           seller,
           exchange.address
+        ); */
+
+        signedOrder = await signatureUtils.ecSignOrderAsync(
+          provider,
+          newOrder,
+          seller,
         );
+        // console.log(signedOrder, signedOrder2);
       } catch (e) {
         console.log(e);
       }
 
-      const isApprovedForAll = await dummyerc721
+      let isApprovedForAll = await dummyerc721
         .isApprovedForAll(seller, erc721proxy.address, { from: seller });
 
       if (!isApprovedForAll) {
         const ERC721Approval = await dummyerc721
           .setApprovalForAll(erc721proxy.address, true, { from: seller });
         const { transactionHash } = ERC721Approval;
+        isApprovedForAll = await dummyerc721
+          .isApprovedForAll(seller, erc721proxy.address, { from: seller });
         console.log('approving');
       } else {
         console.log('already approved');
       }
       assert.isTrue(isApprovedForAll, 'ERC721Proxy must be preapproved on our NFT Token');
 
+      console.log(signedOrder);
+
       const { orderHash } = await exchange.getOrderInfo(signedOrder);
 
       assert.isNotEmpty(orderHash);
+
+      const isValid = await exchange.isValidHashSignature(
+        orderHash,
+        seller,
+        signedOrder.signature
+      );
 
       order = { signedOrder, orderHash };
     });
@@ -141,6 +160,8 @@ contract('Exchange', (accounts) => {
       const affiliateFee = ZERO;
 
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
+      await etherToken.transfer(buyer, takerAssetAmount, { from: owner });
+      await etherToken.approve(ERC20Proxy.address, takerAssetAmount, { from: buyer });
 
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
@@ -149,7 +170,7 @@ contract('Exchange', (accounts) => {
         {
           from    : buyer,
           gasPrice: averageGas,
-          value   : takerAssetAmount,
+          // value   : takerAssetAmount,
         }
       );
     });

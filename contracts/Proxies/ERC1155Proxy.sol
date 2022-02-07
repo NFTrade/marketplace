@@ -35,19 +35,19 @@ contract ERC1155Proxy is
     {
         // Decode params from `assetData`
         // solhint-disable indent
-        (
+        /* (
             address erc1155TokenAddress,
             uint256[] memory ids,
-            uint256[] memory values,
+            uint256 values,
             bytes memory data
-        ) = abi.decode( 
+        ) = abi.decode(
             assetData.sliceDestructive(4, assetData.length),
-            (address, uint256[], uint256[], bytes)
-        );
+            (address, uint256[], uint256, bytes)
+        ); */
         // solhint-enable indent
 
         // Scale values up by `amount`
-        uint256 length = values.length;
+        /* uint256 length = values.length;
         uint256[] memory scaledValues = new uint256[](length);
         for (uint256 i = 0; i != length; i++) {
             // We write the scaled values to an unused location in memory in order
@@ -65,7 +65,7 @@ contract ERC1155Proxy is
             ids,
             scaledValues,
             data
-        );
+        ); */
     }
 
     /// @dev Gets the proxy id associated with the proxy address.
