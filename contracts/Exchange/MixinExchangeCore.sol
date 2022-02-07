@@ -203,8 +203,7 @@ abstract contract MixinExchangeCore is
         fillResults = LibFillResults.calculateFillResults(
             order,
             takerAssetFilledAmount,
-            protocolFeeMultiplier,
-            tx.gasprice
+            protocolFeeMultiplier
         );
 
         bytes32 orderHash = orderInfo.orderHash;
@@ -266,6 +265,8 @@ abstract contract MixinExchangeCore is
         // Update state
         filled[orderHash] = orderTakerAssetFilledAmount.safeAdd(fillResults.takerAssetFilledAmount);
 
+        uint256 protocolFee = fillResults.takerProtocolFeePaid.safeAdd(fillResults.makerProtocolFeePaid);
+
         emit Fill(
             order.makerAddress,
             order.feeRecipientAddress,
@@ -280,7 +281,7 @@ abstract contract MixinExchangeCore is
             fillResults.takerAssetFilledAmount,
             fillResults.makerFeePaid,
             fillResults.takerFeePaid,
-            fillResults.protocolFeePaid
+            protocolFee
         );
     }
 
@@ -434,18 +435,33 @@ abstract contract MixinExchangeCore is
             fillResults.makerFeePaid
         );
 
-        // Pay protocol fee
-        bool didPayProtocolFee = _paySingleProtocolFee(
-            orderHash,
-            fillResults.protocolFeePaid,
-            order.makerAddress,
-            takerAddress
-        );
-
-        // Protocol fees are not paid if the protocolFeeCollector contract is not set
-        if (!didPayProtocolFee) {
-            fillResults.protocolFeePaid = 0;
+        address feeCollector = protocolFeeCollector;
+        if (feeCollector == address(0)) {
+            feeCollector = address(this);
         }
+
+        // Transfer taker protocol fee -> feeCollector
+        if (fillResults.takerProtocolFeePaid > 0) {
+            _dispatchTransferFrom(
+                orderHash,
+                order.takerAssetData,
+                takerAddress,
+                feeCollector,
+                fillResults.takerProtocolFeePaid
+            );
+        }
+
+        // Transfer maker protocol fee -> feeCollector
+        if (fillResults.makerProtocolFeePaid > 0) {
+            _dispatchTransferFrom(
+                orderHash,
+                order.makerAssetData,
+                order.makerAddress,
+                feeCollector,
+                fillResults.makerProtocolFeePaid
+            );
+        }
+
     }
 
     /// @dev Gets the order's hash and amount of takerAsset that has already been filled.
