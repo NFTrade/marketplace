@@ -3,6 +3,7 @@ const ERC721Proxy = artifacts.require('ERC721Proxy');
 const ERC71155Proxy = artifacts.require('ERC1155Proxy');
 const Exchange = artifacts.require('Exchange');
 const LibAssetData = artifacts.require('LibAssetData');
+const Forwarder = artifacts.require('Forwarder');
 const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
@@ -31,7 +32,8 @@ contract('Exchange', (accounts) => {
   let exchange;
   let libAssetData;
   let erc721proxy;
-  let dummyerc721;
+  let forwarder;
+  let nft;
   let etherToken;
   let order;
   const provider = web3.currentProvider;
@@ -41,12 +43,13 @@ contract('Exchange', (accounts) => {
   const seller = accounts[2];
   before(async () => {
     exchange = await Exchange.deployed();
+    forwarder = await Forwarder.deployed();
     libAssetData = await LibAssetData.deployed();
 
     etherToken = await WETH.deployed();
     erc721proxy = await ERC721Proxy.deployed();
 
-    dummyerc721 = await NFT.new('NFT Test', 'NFTT');
+    nft = await NFT.new('NFT Test', 'NFTT');
 
     exchange.setProtocolFeeMultiplier(new BigNumber(5));
     exchange.setProtocolFeeCollectorAddress(accounts[0]);
@@ -55,7 +58,7 @@ contract('Exchange', (accounts) => {
   const createNFT = async (from) => {
     // minting a new NFT
     console.log({ async: 'minting a new NFT', from });
-    const mintTransaction = await dummyerc721.mint(from, 12341, { from });
+    const mintTransaction = await nft.mint(from, 12341, { from });
     const tokenID = mintTransaction.logs[0].args.tokenId;
 
     console.log('minted tokenID:', tokenID.toString());
@@ -76,7 +79,7 @@ contract('Exchange', (accounts) => {
 
       const takerAssetData = await libAssetData.encodeERC20AssetData(etherToken.address);
 
-      const makerAssetData = await libAssetData.encodeERC721AssetData(dummyerc721.address, tokenID);
+      const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
 
       const newOrder = {
         chainId,
@@ -118,14 +121,14 @@ contract('Exchange', (accounts) => {
         console.log(e);
       }
 
-      let isApprovedForAll = await dummyerc721
+      let isApprovedForAll = await nft
         .isApprovedForAll(seller, erc721proxy.address, { from: seller });
 
       if (!isApprovedForAll) {
-        const ERC721Approval = await dummyerc721
+        const ERC721Approval = await nft
           .setApprovalForAll(erc721proxy.address, true, { from: seller });
         const { transactionHash } = ERC721Approval;
-        isApprovedForAll = await dummyerc721
+        isApprovedForAll = await nft
           .isApprovedForAll(seller, erc721proxy.address, { from: seller });
         console.log('approving');
       } else {
@@ -145,15 +148,17 @@ contract('Exchange', (accounts) => {
         signedOrder.signature
       );
 
+      assert.isTrue(isValid);
+
       order = { signedOrder, orderHash };
     });
-    it('Buying a listed asset', async () => {
+    /* it('Buying a listed asset', async () => {
       const averageGas = await web3.eth.getGasPrice();
       const affiliateFeeRecipient = NULL_ADDRESS;
       const affiliateFee = ZERO;
 
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
-      await etherToken.transfer(buyer, takerAssetAmount, { from: owner });
+      await etherToken.deposit({ from: buyer, value: takerAssetAmount });
       await etherToken.approve(ERC20Proxy.address, takerAssetAmount, { from: buyer });
 
       const buyOrder = await exchange.fillOrder(
@@ -164,6 +169,21 @@ contract('Exchange', (accounts) => {
           from    : buyer,
           gasPrice: averageGas,
           // value   : takerAssetAmount,
+        }
+      );
+    }); */
+    it('Buying a listed asset with eth', async () => {
+      const averageGas = await web3.eth.getGasPrice();
+      const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
+
+      const buyOrder = await forwarder.marketBuyOrdersWithEth(
+        [order.signedOrder],
+        order.signedOrder.makerAssetAmount,
+        [order.signedOrder.signature],
+        {
+          from    : buyer,
+          gasPrice: averageGas,
+          value   : takerAssetAmount,
         }
       );
     });
