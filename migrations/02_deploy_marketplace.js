@@ -6,6 +6,7 @@ const LibAssetData = artifacts.require('LibAssetData');
 const Forwarder = artifacts.require('Forwarder');
 const WETH = artifacts.require('WETH');
 const NFT = artifacts.require('NFT');
+const TEST = artifacts.require('TEST');
 const BigNumber = require('bignumber.js');
 
 const deploy = async (deployer, network, accounts) => {
@@ -45,6 +46,8 @@ const deploy = async (deployer, network, accounts) => {
   await erc20Proxy.addToken(etherToken.address);
 
   await deployer.deploy(Forwarder, exchange.address, etherToken.address);
+
+  await deployer.deploy(TEST, etherToken.address);
 
   /* await exchange.setProtocolFeeMultiplier(new BigNumber(0));
   await exchange.setNFTradeTradeFee(new BigNumber(0));
