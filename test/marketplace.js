@@ -6,7 +6,6 @@ const LibAssetData = artifacts.require('LibAssetData');
 const Forwarder = artifacts.require('Forwarder');
 const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
-const TEST = artifacts.require('TEST');
 const BigNumber = require('bignumber.js');
 const { signatureUtils } = require('signature-utils');
 
@@ -177,20 +176,16 @@ contract('Exchange', (accounts) => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
-      const test = TEST.deployed();
-
-      test.test({ value: takerAssetAmount });
-
-      /* const buyOrder = await forwarder.fillOrder(
+      const buyOrder = await forwarder.fillOrder(
         order.signedOrder,
         order.signedOrder.takerAssetAmount,
         order.signedOrder.signature,
         {
-          from    : buyer,
+          from : buyer,
           // gasPrice: averageGas,
-          value   : takerAssetAmount,
+          value: takerAssetAmount,
         }
-      ); */
+      );
     });
   });
 });

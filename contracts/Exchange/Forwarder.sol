@@ -1,13 +1,13 @@
 pragma solidity ^0.8.4;
 
-/* import "../Proxies/interfaces/IAssetData.sol";
+import "../Proxies/interfaces/IAssetData.sol";
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
- */import "./Libs/LibFillResults.sol";
+import "./Libs/LibFillResults.sol";
 import "./Libs/LibOrder.sol";
-/* import "./MixinAssetProxyDispatcher.sol";
+import "./MixinAssetProxyDispatcher.sol";
 import "./interfaces/IExchangeCore.sol";
-import "./interfaces/IAssetProxyDispatcher.sol"; */
+import "./interfaces/IAssetProxyDispatcher.sol";
 
 interface IEtherToken
 {
@@ -24,16 +24,14 @@ interface IEtherToken
 
 contract Forwarder {
 
-    // uint256 constant internal MAX_UINT256 = 2**256 - 1;
+    uint256 constant internal MAX_UINT256 = 2**256 - 1;
 
-    // IExchangeCore internal EXCHANGE;
+    IExchangeCore internal EXCHANGE;
     IEtherToken internal WETH;
 
     using LibOrder for LibOrder.Order;
-    /* using LibBytes for bytes;
-    using LibSafeMath for uint256; */
-
-    event Test(uint256 test);
+    using LibBytes for bytes;
+    using LibSafeMath for uint256;
 
     constructor (
         address _exchange,
@@ -41,12 +39,12 @@ contract Forwarder {
     )
         public
     {
-        // EXCHANGE = IExchangeCore(_exchange);
+        EXCHANGE = IExchangeCore(_exchange);
         WETH = IEtherToken(_weth);
 
-        /* address proxyAddress = IAssetProxyDispatcher(_exchange).getAssetProxy(IAssetData(address(0)).ERC20Token.selector);
+        address proxyAddress = IAssetProxyDispatcher(_exchange).getAssetProxy(IAssetData(address(0)).ERC20Token.selector);
 
-        WETH.approve(proxyAddress, MAX_UINT256); */
+        WETH.approve(proxyAddress, MAX_UINT256);
     }
 
     function fillOrder(
@@ -56,10 +54,14 @@ contract Forwarder {
     )
         public
         payable
+        returns (LibFillResults.FillResults memory fillResults)
     {
-        // WETH.deposit{value: msg.value}();
+        require(msg.value == takerAssetAmount, "FORWARDER: wrong value");
+        require(order.takerAssetAmount == takerAssetAmount, "FORWARDER: wrong value");
 
-        // return EXCHANGE.fillOrder(order, takerAssetAmount, signature);
+        WETH.deposit{ value: msg.value }();
+
+        return EXCHANGE.fillOrder(order, takerAssetAmount, signature);
     }
 
 }
