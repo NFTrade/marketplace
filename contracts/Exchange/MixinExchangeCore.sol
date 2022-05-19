@@ -87,7 +87,34 @@ abstract contract MixinExchangeCore is
         fillResults = _fillOrder(
             order,
             takerAssetFillAmount,
-            signature
+            signature,
+            msg.sender
+        );
+        return fillResults;
+    }
+
+    /// @dev Fills the input order.
+    /// @param order Order struct containing order specifications.
+    /// @param takerAssetFillAmount Desired amount of takerAsset to sell.
+    /// @param signature Proof that order has been created by maker.
+    /// @return fillResults Amounts filled and fees paid by maker and taker.
+    function fillOrderAs(
+        LibOrder.Order memory order,
+        uint256 takerAssetFillAmount,
+        bytes memory signature,
+        address takerAddress
+    )
+        override
+        public
+        payable
+        refundFinalBalanceNoReentry
+        returns (LibFillResults.FillResults memory fillResults)
+    {
+        fillResults = _fillOrder(
+            order,
+            takerAssetFillAmount,
+            signature,
+            takerAddress
         );
         return fillResults;
     }
@@ -170,7 +197,8 @@ abstract contract MixinExchangeCore is
     function _fillOrder(
         LibOrder.Order memory order,
         uint256 takerAssetFillAmount,
-        bytes memory signature
+        bytes memory signature,
+        address takerAddress
     )
         internal
         returns (LibFillResults.FillResults memory fillResults)
@@ -178,14 +206,11 @@ abstract contract MixinExchangeCore is
         // Fetch order info
         LibOrder.OrderInfo memory orderInfo = getOrderInfo(order);
 
-        // Fetch taker address
-        address takerAddress = msg.sender;
-
         // Assert that the order is fillable by taker
         _assertFillableOrder(
             order,
             orderInfo,
-            takerAddress,
+            msg.sender,
             signature
         );
 
@@ -389,7 +414,7 @@ abstract contract MixinExchangeCore is
         _dispatchTransferFrom(
             orderHash,
             order.takerAssetData,
-            takerAddress,
+            msg.sender,
             order.makerAddress,
             fillResults.takerAssetFilledAmount
         );
@@ -407,7 +432,7 @@ abstract contract MixinExchangeCore is
         _dispatchTransferFrom(
             orderHash,
             order.takerFeeAssetData,
-            takerAddress,
+            msg.sender,
             order.feeRecipientAddress,
             fillResults.takerFeePaid
         );
@@ -431,7 +456,7 @@ abstract contract MixinExchangeCore is
             _dispatchTransferFrom(
                 orderHash,
                 order.takerAssetData,
-                takerAddress,
+                msg.sender,
                 feeCollector,
                 fillResults.takerProtocolFeePaid
             );

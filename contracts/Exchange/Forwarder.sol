@@ -22,7 +22,7 @@ interface IEtherToken
 
 
 
-contract Forwarder {
+contract Forwarder is MixinAssetProxyDispatcher {
 
     uint256 constant internal MAX_UINT256 = 2**256 - 1;
 
@@ -61,7 +61,7 @@ contract Forwarder {
 
         WETH.deposit{ value: msg.value }();
 
-        return EXCHANGE.fillOrder(order, takerAssetAmount, signature);
+        return EXCHANGE.fillOrderAs(order, takerAssetAmount, signature, msg.sender);
     }
 
 }

@@ -8,6 +8,17 @@ module.exports = {
       port      : 8545,
       network_id: '*',
     },
+    rinkeby: {
+      provider() {
+        return new HDWalletProvider(
+          'pumpkin pig sword between illness rhythm treat demand anger valid door flat',
+          'wss://rinkeby.infura.io/ws/v3/55f261e35c8e4eab884e82e8801bf3af'
+        );
+      },
+      network_id         : 4,
+      networkCheckTimeout: 1000000,
+      timeoutBlocks      : 200
+    },
   },
 
   mocha: {
