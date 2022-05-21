@@ -173,17 +173,17 @@ contract('Exchange', (accounts) => {
       );
     }); */
     it('Buying a listed asset with eth', async () => {
-      const averageGas = await web3.eth.getGasPrice();
+      // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
-      const buyOrder = await forwarder.marketBuyOrdersWithEth(
-        [order.signedOrder],
-        order.signedOrder.makerAssetAmount,
-        [order.signedOrder.signature],
+      const buyOrder = await forwarder.fillOrder(
+        order.signedOrder,
+        order.signedOrder.takerAssetAmount,
+        order.signedOrder.signature,
         {
-          from    : buyer,
-          gasPrice: averageGas,
-          value   : takerAssetAmount,
+          from : buyer,
+          // gasPrice: averageGas,
+          value: takerAssetAmount,
         }
       );
     });
