@@ -98,7 +98,7 @@ abstract contract MixinExchangeCore is
     /// @param takerAssetFillAmount Desired amount of takerAsset to sell.
     /// @param signature Proof that order has been created by maker.
     /// @return fillResults Amounts filled and fees paid by maker and taker.
-    function fillOrderAs(
+    function fillOrderFor(
         LibOrder.Order memory order,
         uint256 takerAssetFillAmount,
         bytes memory signature,

@@ -61,7 +61,7 @@ contract Forwarder is MixinAssetProxyDispatcher {
 
         WETH.deposit{ value: msg.value }();
 
-        return EXCHANGE.fillOrderAs(order, takerAssetAmount, signature, msg.sender);
+        return EXCHANGE.fillOrderFor(order, takerAssetAmount, signature, msg.sender);
     }
 
 }
