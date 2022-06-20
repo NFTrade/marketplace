@@ -7,7 +7,7 @@ const Forwarder = artifacts.require('Forwarder');
 const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
-// const signTyped = require('./signature');
+const signTyped = require('./signature');
 const nftdaoSDK = require('nftdao-sdk').default;
 
 const chainId = 5777;
@@ -90,7 +90,7 @@ contract('Exchange', (accounts) => {
         senderAddress        : NULL_ADDRESS,
         feeRecipientAddress  : NULL_ADDRESS,
         expirationTimeSeconds: tenYearsInSeconds.toString(),
-        salt                 : '89537510672408853941615336703839164370175054453760603848604471412164647738008',
+        salt                 : web3.utils.randomHex(32),
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,
@@ -107,6 +107,7 @@ contract('Exchange', (accounts) => {
         // Generate the order hash and sign it
         console.log(nftdaoSDK);
         const sdk = nftdaoSDK({ marketplaceId: 'test' });
+
         signedOrder = await sdk.sign(
           provider,
           newOrder,
@@ -114,12 +115,6 @@ contract('Exchange', (accounts) => {
           exchange.address,
         );
 
-        /* signedOrder = await signatureUtils.ecSignOrderAsync(
-          provider,
-          newOrder,
-          seller,
-        ); */
-        // console.log(signedOrder, signedOrder2);
       } catch (e) {
         console.log(e);
       }
@@ -175,7 +170,7 @@ contract('Exchange', (accounts) => {
         }
       );
     }); */
-/*     it('Buying a listed asset with eth', async () => {
+    it('Buying a listed asset with eth', async () => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
@@ -189,6 +184,6 @@ contract('Exchange', (accounts) => {
           value: takerAssetAmount,
         }
       );
-    }); */
+    });
   });
 });

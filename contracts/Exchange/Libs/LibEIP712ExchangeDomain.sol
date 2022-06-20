@@ -6,10 +6,10 @@ import "../../Utils/LibEIP712.sol";
 contract LibEIP712ExchangeDomain {
 
     // EIP712 Exchange Domain Name value
-    string constant internal _EIP712_EXCHANGE_DOMAIN_NAME = "NFTrade";
+    string constant internal _EIP712_EXCHANGE_DOMAIN_NAME = "NFTDao";
 
     // EIP712 Exchange Domain Version value
-    string constant internal _EIP712_EXCHANGE_DOMAIN_VERSION = "1.0.0";
+    string constant internal _EIP712_EXCHANGE_DOMAIN_VERSION = "2.0.0";
 
     // solhint-disable var-name-mixedcase
     /// @dev Hash of the EIP712 Domain Separator data
