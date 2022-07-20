@@ -19,7 +19,7 @@ const ZERO = new BigNumber(0).toString();
 web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 
 BigNumber.config({ DECIMAL_PLACES: 1000 });
-const tenYearsInSeconds = new BigNumber(Date.now() + 315569520).toString();
+const tenYearsInSeconds = Math.round((Date.now() / 1000) + 10);
 const MAX_DIGITS_IN_UNSIGNED_256_INT = 78;
 
 const generatePseudoRandom256BitNumber = () => {

@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 import "../Proxies/interfaces/IAssetData.sol";
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
-import "./Libs/LibFillResults.sol";
 import "./Libs/LibOrder.sol";
 import "./MixinAssetProxyDispatcher.sol";
 import "./interfaces/IExchangeCore.sol";
@@ -54,14 +53,14 @@ contract Forwarder is MixinAssetProxyDispatcher {
     )
         public
         payable
-        returns (LibFillResults.FillResults memory fillResults)
+        returns (bool fulfilled)
     {
         require(msg.value == takerAssetAmount, "FORWARDER: wrong value");
         require(order.takerAssetAmount == takerAssetAmount, "FORWARDER: wrong value");
 
         WETH.deposit{ value: msg.value }();
 
-        return EXCHANGE.fillOrderFor(order, takerAssetAmount, signature, msg.sender);
+        return EXCHANGE.fillOrderFor(order, signature, msg.sender);
     }
 
 }
