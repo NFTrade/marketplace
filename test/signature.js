@@ -36,7 +36,7 @@ const Order = [
     type: 'address',
   },
   {
-    name: 'feeRecipientAddress',
+    name: 'royaltiesAddress',
     type: 'address',
   },
   {
@@ -52,11 +52,7 @@ const Order = [
     type: 'uint256',
   },
   {
-    name: 'makerFee',
-    type: 'uint256',
-  },
-  {
-    name: 'takerFee',
+    name: 'royaltiesAmount',
     type: 'uint256',
   },
   {
@@ -73,14 +69,6 @@ const Order = [
   },
   {
     name: 'takerAssetData',
-    type: 'bytes',
-  },
-  {
-    name: 'makerFeeAssetData',
-    type: 'bytes',
-  },
-  {
-    name: 'takerFeeAssetData',
     type: 'bytes',
   },
 ];
@@ -258,8 +246,8 @@ module.exports = async (provider, order, from, verifyingContract) => {
       Order,
     },
     domain: {
-      name   : 'NFTrade',
-      version: '1.0.0',
+      name   : 'Nifty Exchange',
+      version: '2.0',
       chainId: order.chainId,
       verifyingContract,
     },

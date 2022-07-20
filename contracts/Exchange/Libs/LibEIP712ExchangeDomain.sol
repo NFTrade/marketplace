@@ -6,7 +6,7 @@ import "../../Utils/LibEIP712.sol";
 contract LibEIP712ExchangeDomain {
 
     // EIP712 Exchange Domain Name value
-    string constant internal _EIP712_EXCHANGE_DOMAIN_NAME = "NFTDao";
+    string constant internal _EIP712_EXCHANGE_DOMAIN_NAME = "Nifty Exchange";
 
     // EIP712 Exchange Domain Version value
     string constant internal _EIP712_EXCHANGE_DOMAIN_VERSION = "2.0.0";

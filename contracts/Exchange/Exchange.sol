@@ -17,12 +17,7 @@ contract Exchange is
 {
     /// @dev Mixins are instantiated in the order they are inherited
     /// @param chainId Chain ID of the network this contract is deployed on.
-    constructor (uint256 chainId)
-        public
-        LibEIP712ExchangeDomain(chainId, address(0))
-    {
-        
-    }
+    constructor (uint256 chainId) LibEIP712ExchangeDomain(chainId, address(0)) {}
 
     function returnAllETHToOwner() public payable onlyOwner {
         payable(msg.sender).transfer(address(this).balance);

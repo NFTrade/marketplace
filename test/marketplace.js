@@ -8,7 +8,6 @@ const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
 const signTyped = require('./signature');
-const nftdaoSDK = require('nftdao-sdk').default;
 
 const chainId = 5777;
 
@@ -78,7 +77,7 @@ contract('Exchange', (accounts) => {
       const baseUnitAmount = unit.times(new BigNumber(price));
       const takerAssetAmount = baseUnitAmount;
 
-      const takerAssetData = await libAssetData.encodeERC20AssetData(etherToken.address);
+      const takerAssetData = await libAssetData.encodeERC20AssetData(NULL_ADDRESS);
 
       const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
 
@@ -88,16 +87,14 @@ contract('Exchange', (accounts) => {
         makerAddress         : seller,
         takerAddress         : NULL_ADDRESS,
         senderAddress        : NULL_ADDRESS,
-        feeRecipientAddress  : NULL_ADDRESS,
+        royaltiesAddress     : NULL_ADDRESS,
         expirationTimeSeconds: tenYearsInSeconds.toString(),
         salt                 : web3.utils.randomHex(32),
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,
         takerAssetData,
-        makerFeeAssetData    : NULL_BYTES,
-        takerFeeAssetData    : NULL_BYTES,
-        makerFee             : ZERO.toString(),
+        royaltiesAmount      : ZERO.toString(),
         takerFee             : ZERO.toString(),
       };
 
@@ -105,16 +102,13 @@ contract('Exchange', (accounts) => {
       try {
         // newOrder.chainId = String(newOrder.chainId);
         // Generate the order hash and sign it
-        console.log(nftdaoSDK);
-        const sdk = nftdaoSDK({ marketplaceId: 'test' });
 
-        signedOrder = await sdk.sign(
+        signedOrder = await signTyped(
           provider,
           newOrder,
           seller,
           exchange.address,
         );
-
       } catch (e) {
         console.log(e);
       }
@@ -133,6 +127,8 @@ contract('Exchange', (accounts) => {
         console.log('already approved');
       }
       assert.isTrue(isApprovedForAll, 'ERC721Proxy must be preapproved on our NFT Token');
+
+      console.log(signedOrder);
 
       console.log(signedOrder);
 
@@ -170,20 +166,18 @@ contract('Exchange', (accounts) => {
         }
       );
     }); */
-    it('Buying a listed asset with eth', async () => {
+    /* it('Buying a listed asset with eth', async () => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
-      const buyOrder = await forwarder.fillOrder(
+      const buyOrder = await exchange.fillOrder(
         order.signedOrder,
-        order.signedOrder.takerAssetAmount,
         order.signedOrder.signature,
         {
           from : buyer,
-          // gasPrice: averageGas,
           value: takerAssetAmount,
         }
       );
-    });
+    }); */
   });
 });
