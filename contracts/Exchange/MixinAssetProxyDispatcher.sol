@@ -79,13 +79,7 @@ contract MixinAssetProxyDispatcher is
             bool ethPayment = false;
 
             if (assetProxyId == IAssetData(address(0)).ERC20Token.selector) {
-                (
-                    address erc20TokenAddress
-                ) = abi.decode( 
-                    assetData.sliceDestructive(4, assetData.length),
-                    (address)
-                );
-
+                address erc20TokenAddress = assetData.readAddress(4);
                 ethPayment = erc20TokenAddress == address(0);
             }
 

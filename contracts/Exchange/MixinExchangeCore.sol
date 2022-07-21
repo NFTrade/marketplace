@@ -303,6 +303,8 @@ abstract contract MixinExchangeCore is
         );
     }
 
+    event Test(bytes ad, address t);
+
     /// @dev Validates context for fillOrder. Succeeds or throws.
     /// @param order to be filled.
     /// @param orderInfo OrderStatus, orderHash, and amount already filled of order.
@@ -315,19 +317,13 @@ abstract contract MixinExchangeCore is
         bytes memory signature
     )
         internal
-        view
     {
         if (orderInfo.orderType == LibOrder.OrderType.INVALID) {
             revert('EXCHANGE: type illegal');
         }
 
         if (orderInfo.orderType == LibOrder.OrderType.LIST) {
-            (
-                address erc20TokenAddress
-            ) = abi.decode( 
-                order.takerAssetData.sliceDestructive(4, order.takerAssetData.length),
-                (address)
-            );
+            address erc20TokenAddress = order.takerAssetData.readAddress(4);
             if (erc20TokenAddress == address(0) && msg.value != order.takerAssetAmount) {
                 revert('EXCHANGE: wrong value sent');
             }

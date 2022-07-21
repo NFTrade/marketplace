@@ -184,10 +184,10 @@ const send = (provider, data) => new Promise((resolve, reject) => provider.sendA
     err = result.error;
   }
   if (err) {
-    console.log(err, result);
+    // console.log(err, result);
     return reject(err);
   }
-  console.log(result);
+  // console.log(result);
   return resolve(result.result);
 }));
 /**
@@ -212,11 +212,11 @@ const signTypedData = async (provider, address, payload) => {
 
     try {
       const response = await send(provider, typedData);
-      console.log(method, response);
+      // console.log(method, response);
       return response;
     } catch (err) {
       lastErr = err;
-      console.error('err', err);
+      // console.error('err', err);
       // If there are no more methods to try or the error says something other
       // than the method not existing, throw.
       /* if (!/(not handled|does not exist|not supported)/.test(err.message)) {
@@ -255,6 +255,10 @@ module.exports = async (provider, order, from, verifyingContract) => {
     primaryType: 'Order',
   };
 
+  const orderHash = signTypedDataUtils.hash(typedData);
+
+  console.log(orderHash);
+
   let signature;
   try {
     /* if (!window.ethereum || !window.ethereum.isMetaMask) {
@@ -262,9 +266,8 @@ module.exports = async (provider, order, from, verifyingContract) => {
       throw new Error('using eth_sign');
     } */
     signature = await signTypedData(provider, from, typedData);
-    console.log('here', signature);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     // HACK: We are unable to handle specific errors thrown since provider is not an object
     //       under our control. It could be Metamask Web3, Ethers, or any general RPC provider.
     //       We check for a user denying the signature request in a way that supports Metamask and

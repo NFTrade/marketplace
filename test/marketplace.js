@@ -51,8 +51,8 @@ contract('Exchange', (accounts) => {
 
     nft = await NFT.new('NFT Test', 'NFTT');
 
-    exchange.setProtocolFeeMultiplier(new BigNumber(5));
-    exchange.setProtocolFeeCollectorAddress(accounts[0]);
+    exchange.setProtocolFeeMultiplier(new BigNumber(2));
+    exchange.setProtocolFeeCollectorAddress(accounts[5]);
   });
 
   const createNFT = async (from) => {
@@ -87,14 +87,14 @@ contract('Exchange', (accounts) => {
         makerAddress         : seller,
         takerAddress         : NULL_ADDRESS,
         senderAddress        : NULL_ADDRESS,
-        royaltiesAddress     : NULL_ADDRESS,
+        royaltiesAddress     : accounts[3],
         expirationTimeSeconds: tenYearsInSeconds.toString(),
         salt                 : web3.utils.randomHex(32),
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,
         takerAssetData,
-        royaltiesAmount      : ZERO.toString(),
+        royaltiesAmount      : takerAssetAmount.times(0.1).toString(),
         takerFee             : ZERO.toString(),
       };
 
@@ -128,11 +128,13 @@ contract('Exchange', (accounts) => {
       }
       assert.isTrue(isApprovedForAll, 'ERC721Proxy must be preapproved on our NFT Token');
 
-      console.log(signedOrder);
+      /* console.log(signedOrder); */
 
-      console.log(signedOrder);
+      const orderInfo = await exchange.getOrderInfo(signedOrder);
 
-      const { orderHash } = await exchange.getOrderInfo(signedOrder);
+      const { orderHash } = orderInfo;
+
+      console.log(orderInfo);
 
       assert.isNotEmpty(orderHash);
 
@@ -166,7 +168,7 @@ contract('Exchange', (accounts) => {
         }
       );
     }); */
-    /* it('Buying a listed asset with eth', async () => {
+    it('Buying a listed asset with eth', async () => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
@@ -178,6 +180,6 @@ contract('Exchange', (accounts) => {
           value: takerAssetAmount,
         }
       );
-    }); */
+    });
   });
 });

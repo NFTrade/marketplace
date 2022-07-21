@@ -20,11 +20,11 @@ library LibOrder {
     //     "uint256 expirationTimeSeconds,",
     //     "uint256 salt,",
     //     "bytes makerAssetData,",
-    //     "bytes takerAssetData,",
+    //     "bytes takerAssetData",
     //     ")"
     // ))
     bytes32 constant internal _EIP712_ORDER_SCHEMA_HASH =
-        0x0809d2ace41ba67ce57fede31594902ca3e49d67d497b5bf6c99997c3e3f9f91;
+        0x85eeee70c9e228559a0ea5492e9915b70dab1efedd40807802f996020d88dc2e;
 
     // A valid order remains fillable until it is expired, fully filled, or cancelled.
     // An order's status is unaffected by external factors, like account balances.

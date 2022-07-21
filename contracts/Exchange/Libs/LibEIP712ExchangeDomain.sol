@@ -9,7 +9,7 @@ contract LibEIP712ExchangeDomain {
     string constant internal _EIP712_EXCHANGE_DOMAIN_NAME = "Nifty Exchange";
 
     // EIP712 Exchange Domain Version value
-    string constant internal _EIP712_EXCHANGE_DOMAIN_VERSION = "2.0.0";
+    string constant internal _EIP712_EXCHANGE_DOMAIN_VERSION = "2.0";
 
     // solhint-disable var-name-mixedcase
     /// @dev Hash of the EIP712 Domain Separator data
@@ -23,7 +23,6 @@ contract LibEIP712ExchangeDomain {
         uint256 chainId,
         address verifyingContractAddressIfExists
     )
-        public
     {
         address verifyingContractAddress = verifyingContractAddressIfExists == address(0) ? address(this) : verifyingContractAddressIfExists;
         EIP712_EXCHANGE_DOMAIN_HASH = LibEIP712.hashEIP712Domain(
