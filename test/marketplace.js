@@ -18,7 +18,7 @@ const ZERO = new BigNumber(0).toString();
 web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 
 BigNumber.config({ DECIMAL_PLACES: 1000 });
-const tenYearsInSeconds = Math.round((Date.now() / 1000) + 10);
+const olderDate = Math.round(Date.now() / 1000) + 3600;
 const MAX_DIGITS_IN_UNSIGNED_256_INT = 78;
 
 const generatePseudoRandom256BitNumber = () => {
@@ -88,14 +88,13 @@ contract('Exchange', (accounts) => {
         takerAddress         : NULL_ADDRESS,
         senderAddress        : NULL_ADDRESS,
         royaltiesAddress     : accounts[3],
-        expirationTimeSeconds: tenYearsInSeconds.toString(),
-        salt                 : web3.utils.randomHex(32),
+        expirationTimeSeconds: olderDate.toString(),
+        salt                 : Math.round((Date.now() / 1000)),
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,
         takerAssetData,
-        royaltiesAmount      : takerAssetAmount.times(0.1).toString(),
-        takerFee             : ZERO.toString(),
+        royaltiesAmount      : takerAssetAmount.times(0.1).toString()
       };
 
       let signedOrder;

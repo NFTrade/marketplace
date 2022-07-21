@@ -32,12 +32,10 @@ abstract contract IExchangeCore {
     // CancelUpTo event is emitted whenever `cancelOrdersUpTo` is executed succesfully.
     event CancelUpTo(
         address indexed makerAddress,         // Orders cancelled must have been created by this address.
-        address indexed orderSenderAddress,   // Orders cancelled must have a `senderAddress` equal to this address.
-        uint256 orderEpoch                    // Orders with specified makerAddress and senderAddress with a salt less than this value are considered cancelled.
+        uint256 orderEpoch                    // Orders with a salt less than this value are considered cancelled.
     );
 
     /// @dev Cancels all orders created by makerAddress with a salt less than or equal to the targetOrderEpoch
-    ///      and senderAddress equal to msg.sender (or null address if msg.sender == makerAddress).
     /// @param targetOrderEpoch Orders created with a salt less or equal to this value will be cancelled.
     function cancelOrdersUpTo(uint256 targetOrderEpoch)
         virtual

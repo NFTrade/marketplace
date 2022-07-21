@@ -12,36 +12,9 @@ abstract contract ISignatureValidator {
         EIP712,                      // 0x02
         EthSign,                     // 0x03
         Wallet,                      // 0x04
-        Validator,                   // 0x05
-        PreSigned,                   // 0x06
-        EIP1271Wallet,               // 0x07
-        NSignatureTypes              // 0x08, number of signature types. Always leave at end.
+        EIP1271Wallet,               // 0x05
+        NSignatureTypes              // 0x06, number of signature types. Always leave at end.
     }
-
-    event SignatureValidatorApproval(
-        address indexed signerAddress,     // Address that approves or disapproves a contract to verify signatures.
-        address indexed validatorAddress,  // Address of signature validator contract.
-        bool isApproved                    // Approval or disapproval of validator contract.
-    );
-
-    /// @dev Approves a hash on-chain.
-    ///      After presigning a hash, the preSign signature type will become valid for that hash and signer.
-    /// @param hash Any 32-byte hash.
-    function preSign(bytes32 hash)
-        virtual
-        external
-        payable;
-
-    /// @dev Approves/unnapproves a Validator contract to verify signatures on signer's behalf.
-    /// @param validatorAddress Address of Validator contract.
-    /// @param approval Approval or disapproval of  Validator contract.
-    function setSignatureValidatorApproval(
-        address validatorAddress,
-        bool approval
-    )
-        virtual
-        external
-        payable;
 
     /// @dev Verifies that a hash has been signed by the given signer.
     /// @param hash Any 32-byte hash.

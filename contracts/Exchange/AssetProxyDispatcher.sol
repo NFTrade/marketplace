@@ -46,6 +46,17 @@ contract AssetProxyDispatcher is
         return _assetProxies[assetProxyId];
     }
 
+    function _isERC20Proxy(bytes memory assetData)
+        internal
+        pure
+        returns (bool)
+    {
+        bytes4 assetProxyId = assetData.readBytes4(0);
+        bytes4 erc20ProxyId = IAssetData(address(0)).ERC20Token.selector;
+
+        return assetProxyId == erc20ProxyId;
+    }
+
     /// @dev Forwards arguments to assetProxy and calls `transferFrom`. Either succeeds or throws.
     /// @param assetData Byte array encoded for the asset.
     /// @param from Address to transfer token from.
