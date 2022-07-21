@@ -3,21 +3,18 @@ pragma solidity ^0.8.4;
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
 import "../Utils/Refundable.sol";
-import "./Libs/LibMath.sol";
 import "./Libs/LibOrder.sol";
-import "./Libs/LibEIP712ExchangeDomain.sol";
 import "./interfaces/IExchangeCore.sol";
-import "./MixinAssetProxyDispatcher.sol";
-import "./MixinProtocolFees.sol";
-import "./MixinSignatureValidator.sol";
+import "./AssetProxyDispatcher.sol";
+import "./ProtocolFees.sol";
+import "./SignatureValidator.sol";
 import "../Proxies/interfaces/IAssetData.sol";
 
-abstract contract MixinExchangeCore is
+abstract contract ExchangeCore is
     IExchangeCore,
-    LibEIP712ExchangeDomain,
-    MixinAssetProxyDispatcher,
-    MixinProtocolFees,
-    MixinSignatureValidator
+    AssetProxyDispatcher,
+    ProtocolFees,
+    SignatureValidator
 {
     using LibOrder for LibOrder.Order;
     using LibSafeMath for uint256;

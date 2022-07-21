@@ -18,18 +18,15 @@ contract LibEIP712ExchangeDomain {
     // solhint-enable var-name-mixedcase
 
     /// @param chainId Chain ID of the network this contract is deployed on.
-    /// @param verifyingContractAddressIfExists Address of the verifying contract (null if the address of this contract)
     constructor (
-        uint256 chainId,
-        address verifyingContractAddressIfExists
+        uint256 chainId
     )
     {
-        address verifyingContractAddress = verifyingContractAddressIfExists == address(0) ? address(this) : verifyingContractAddressIfExists;
         EIP712_EXCHANGE_DOMAIN_HASH = LibEIP712.hashEIP712Domain(
             _EIP712_EXCHANGE_DOMAIN_NAME,
             _EIP712_EXCHANGE_DOMAIN_VERSION,
             chainId,
-            verifyingContractAddress
+            address(this)
         );
     }
 }

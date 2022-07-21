@@ -7,7 +7,7 @@ import "../Proxies/interfaces/IAssetProxy.sol";
 import "./interfaces/IAssetProxyDispatcher.sol";
 
 
-contract MixinAssetProxyDispatcher is
+contract AssetProxyDispatcher is
     Ownable,
     IAssetProxyDispatcher
 {

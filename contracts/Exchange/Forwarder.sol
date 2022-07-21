@@ -4,7 +4,7 @@ import "../Proxies/interfaces/IAssetData.sol";
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
 import "./Libs/LibOrder.sol";
-import "./MixinAssetProxyDispatcher.sol";
+import "./AssetProxyDispatcher.sol";
 import "./interfaces/IExchangeCore.sol";
 import "./interfaces/IAssetProxyDispatcher.sol";
 
@@ -21,7 +21,7 @@ interface IEtherToken
 
 
 
-contract Forwarder is MixinAssetProxyDispatcher {
+contract Forwarder is AssetProxyDispatcher {
 
     uint256 constant internal MAX_UINT256 = 2**256 - 1;
 

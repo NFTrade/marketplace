@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IProtocolFees.sol";
 
 
-contract MixinProtocolFees is
+contract ProtocolFees is
     IProtocolFees,
     Ownable
 {

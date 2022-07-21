@@ -4,7 +4,6 @@ import "../Utils/LibBytes.sol";
 import "../Utils/LibEIP1271.sol";
 import "../Utils/Refundable.sol";
 import "./Libs/LibOrder.sol";
-import "./Libs/LibTransaction.sol";
 import "./Libs/LibEIP712ExchangeDomain.sol";
 import "./interfaces/IWallet.sol";
 import "./interfaces/IEIP1271Wallet.sol";
@@ -12,7 +11,7 @@ import "./interfaces/ISignatureValidator.sol";
 import "./interfaces/IEIP1271Data.sol";
 
 
-abstract contract MixinSignatureValidator is
+abstract contract SignatureValidator is
     LibEIP712ExchangeDomain,
     LibEIP1271,
     ISignatureValidator,
@@ -20,7 +19,6 @@ abstract contract MixinSignatureValidator is
 {
     using LibBytes for bytes;
     using LibOrder for LibOrder.Order;
-    using LibTransaction for LibTransaction.Transaction;
 
     // Magic bytes to be returned by `Wallet` signature type validators.
     // bytes4(keccak256("isValidWalletSignature(bytes32,address,bytes)"))
@@ -126,28 +124,6 @@ abstract contract MixinSignatureValidator is
         return isValid;
     }
 
-    /// @dev Verifies that a signature for a transaction is valid.
-    /// @param transaction The transaction.
-    /// @param signature Proof that the order has been signed by signer.
-    /// @return isValid `true` if the signature is valid for the given transaction and signer.
-    function isValidTransactionSignature(
-        LibTransaction.Transaction memory transaction,
-        bytes memory signature
-    )
-        override
-        public
-        view
-        returns (bool isValid)
-    {
-        bytes32 transactionHash = transaction.getTypedDataHash(EIP712_EXCHANGE_DOMAIN_HASH);
-        isValid = _isValidTransactionWithHashSignature(
-            transaction,
-            transactionHash,
-            signature
-        );
-        return isValid;
-    }
-
     /// @dev Verifies that an order, with provided order hash, has been signed
     ///      by the given signer.
     /// @param order The order.
@@ -190,55 +166,6 @@ abstract contract MixinSignatureValidator is
             isValid = _validateHashSignatureTypes(
                 signatureType,
                 orderHash,
-                signerAddress,
-                signature
-            );
-        }
-        return isValid;
-    }
-
-    /// @dev Verifies that a transaction, with provided order hash, has been signed
-    ///      by the given signer.
-    /// @param transaction The transaction.
-    /// @param transactionHash The hash of the transaction.
-    /// @param signature Proof that the hash has been signed by signer.
-    /// @return isValid True if the signature is valid for the given transaction and signer.
-    function _isValidTransactionWithHashSignature(
-        LibTransaction.Transaction memory transaction,
-        bytes32 transactionHash,
-        bytes memory signature
-    )
-        override
-        internal
-        view
-        returns (bool isValid)
-    {
-        address signerAddress = transaction.signerAddress;
-        SignatureType signatureType = _readValidSignatureType(
-            transactionHash,
-            signerAddress,
-            signature
-        );
-        if (signatureType == SignatureType.Validator) {
-            // The entire transaction is verified by a validator contract.
-            isValid = _validateBytesWithValidator(
-                _encodeEIP1271TransactionWithHash(transaction, transactionHash),
-                transactionHash,
-                signerAddress,
-                signature
-            );
-        } else if (signatureType == SignatureType.EIP1271Wallet) {
-            // The entire transaction is verified by a wallet contract.
-            isValid = _validateBytesWithWallet(
-                _encodeEIP1271TransactionWithHash(transaction, transactionHash),
-                signerAddress,
-                signature
-            );
-        } else {
-            // Otherwise, it's one of the hash-only signature types.
-            isValid = _validateHashSignatureTypes(
-                signatureType,
-                transactionHash,
                 signerAddress,
                 signature
             );
@@ -389,23 +316,6 @@ abstract contract MixinSignatureValidator is
             IEIP1271Data(address(0)).OrderWithHash.selector,
             order,
             orderHash
-        );
-    }
-
-    /// @dev ABI encodes a transaction and hash with a selector to be passed into
-    ///      an EIP1271 compliant `isValidSignature` function.
-    function _encodeEIP1271TransactionWithHash(
-        LibTransaction.Transaction memory transaction,
-        bytes32 transactionHash
-    )
-        private
-        pure
-        returns (bytes memory encoded)
-    {
-        return abi.encodeWithSelector(
-            IEIP1271Data(address(0)).TransactionWithHash.selector,
-            transaction,
-            transactionHash
         );
     }
 

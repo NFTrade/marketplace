@@ -1,7 +1,6 @@
 pragma solidity ^0.8.4;
 
 import "../Libs/LibOrder.sol";
-import "../Libs/LibTransaction.sol";
 
 
 abstract contract ISignatureValidator {
@@ -71,19 +70,6 @@ abstract contract ISignatureValidator {
         view
         returns (bool isValid);
 
-    /// @dev Verifies that a signature for a transaction is valid.
-    /// @param transaction The transaction.
-    /// @param signature Proof that the order has been signed by signer.
-    /// @return isValid true if the signature is valid for the given transaction and signer.
-    function isValidTransactionSignature(
-        LibTransaction.Transaction memory transaction,
-        bytes memory signature
-    )
-        virtual
-        public
-        view
-        returns (bool isValid);
-
     /// @dev Verifies that an order, with provided order hash, has been signed
     ///      by the given signer.
     /// @param order The order.
@@ -93,22 +79,6 @@ abstract contract ISignatureValidator {
     function _isValidOrderWithHashSignature(
         LibOrder.Order memory order,
         bytes32 orderHash,
-        bytes memory signature
-    )
-        virtual
-        internal
-        view
-        returns (bool isValid);
-
-    /// @dev Verifies that a transaction, with provided order hash, has been signed
-    ///      by the given signer.
-    /// @param transaction The transaction.
-    /// @param transactionHash The hash of the transaction.
-    /// @param signature Proof that the hash has been signed by signer.
-    /// @return isValid True if the signature is valid for the given transaction and signer.
-    function _isValidTransactionWithHashSignature(
-        LibTransaction.Transaction memory transaction,
-        bytes32 transactionHash,
         bytes memory signature
     )
         virtual
