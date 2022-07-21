@@ -36,7 +36,7 @@ const Order = [
     type: 'address',
   },
   {
-    name: 'feeRecipientAddress',
+    name: 'royaltiesAddress',
     type: 'address',
   },
   {
@@ -52,11 +52,7 @@ const Order = [
     type: 'uint256',
   },
   {
-    name: 'makerFee',
-    type: 'uint256',
-  },
-  {
-    name: 'takerFee',
+    name: 'royaltiesAmount',
     type: 'uint256',
   },
   {
@@ -73,14 +69,6 @@ const Order = [
   },
   {
     name: 'takerAssetData',
-    type: 'bytes',
-  },
-  {
-    name: 'makerFeeAssetData',
-    type: 'bytes',
-  },
-  {
-    name: 'takerFeeAssetData',
     type: 'bytes',
   },
 ];
@@ -192,15 +180,21 @@ const signTypedDataUtils = {
  *   @send - send message to and open metamask
  */
 const send = (provider, data) => new Promise((resolve, reject) => provider.sendAsync(data, (err, result) => {
+  if (result.error) {
+    err = result.error;
+  }
   if (err) {
+    // console.log(err, result);
     return reject(err);
   }
+  // console.log(result);
   return resolve(result.result);
 }));
 /**
  *   @signTypedData - function that handles signing and metamask interaction
  */
 const signTypedData = async (provider, address, payload) => {
+  // console.log(provider);
   const methodsToTry = ['eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData'];
 
   let lastErr;
@@ -218,14 +212,16 @@ const signTypedData = async (provider, address, payload) => {
 
     try {
       const response = await send(provider, typedData);
+      // console.log(method, response);
       return response;
     } catch (err) {
       lastErr = err;
+      // console.error('err', err);
       // If there are no more methods to try or the error says something other
       // than the method not existing, throw.
-      if (!/(not handled|does not exist|not supported)/.test(err.message)) {
+      /* if (!/(not handled|does not exist|not supported)/.test(err.message)) {
         throw err;
-      }
+      } */
     }
   }
 
@@ -243,15 +239,15 @@ const signEth = async (provider, address, payload) => {
 /**
  *   @signTyped - main function to be called when signing
  */
-exports.signTyped = async (provider, order, from, verifyingContract) => {
+module.exports = async (provider, order, from, verifyingContract) => {
   const typedData = {
     types: {
       EIP712Domain,
       Order,
     },
     domain: {
-      name   : 'NFTrade',
-      version: '1.0.0',
+      name   : 'Nifty Exchange',
+      version: '2.0',
       chainId: order.chainId,
       verifyingContract,
     },
@@ -259,14 +255,19 @@ exports.signTyped = async (provider, order, from, verifyingContract) => {
     primaryType: 'Order',
   };
 
+  const orderHash = signTypedDataUtils.hash(typedData);
+
+  console.log(orderHash);
+
   let signature;
   try {
-    if (!window.ethereum || !window.ethereum.isMetaMask) {
+    /* if (!window.ethereum || !window.ethereum.isMetaMask) {
       // if not using metamask use signEth
       throw new Error('using eth_sign');
-    }
+    } */
     signature = await signTypedData(provider, from, typedData);
   } catch (err) {
+    // console.log(err);
     // HACK: We are unable to handle specific errors thrown since provider is not an object
     //       under our control. It could be Metamask Web3, Ethers, or any general RPC provider.
     //       We check for a user denying the signature request in a way that supports Metamask and

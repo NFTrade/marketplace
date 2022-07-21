@@ -7,7 +7,7 @@ const Forwarder = artifacts.require('Forwarder');
 const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
-const { signatureUtils } = require('signature-utils');
+const signTyped = require('./signature');
 
 const chainId = 5777;
 
@@ -17,8 +17,8 @@ const ZERO = new BigNumber(0).toString();
 
 web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 
-BigNumber.config({ DECIMAL_PLACES: 100 });
-const tenYearsInSeconds = new BigNumber(Date.now() + 315569520).toString();
+BigNumber.config({ DECIMAL_PLACES: 1000 });
+const olderDate = Math.round(Date.now() / 1000) + 3600;
 const MAX_DIGITS_IN_UNSIGNED_256_INT = 78;
 
 const generatePseudoRandom256BitNumber = () => {
@@ -51,8 +51,8 @@ contract('Exchange', (accounts) => {
 
     nft = await NFT.new('NFT Test', 'NFTT');
 
-    exchange.setProtocolFeeMultiplier(new BigNumber(5));
-    exchange.setProtocolFeeCollectorAddress(accounts[0]);
+    exchange.setProtocolFeeMultiplier(new BigNumber(2));
+    exchange.setProtocolFeeCollectorAddress(accounts[5]);
   });
 
   const createNFT = async (from) => {
@@ -77,7 +77,7 @@ contract('Exchange', (accounts) => {
       const baseUnitAmount = unit.times(new BigNumber(price));
       const takerAssetAmount = baseUnitAmount;
 
-      const takerAssetData = await libAssetData.encodeERC20AssetData(etherToken.address);
+      const takerAssetData = await libAssetData.encodeERC20AssetData(NULL_ADDRESS);
 
       const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
 
@@ -87,36 +87,27 @@ contract('Exchange', (accounts) => {
         makerAddress         : seller,
         takerAddress         : NULL_ADDRESS,
         senderAddress        : NULL_ADDRESS,
-        feeRecipientAddress  : NULL_ADDRESS,
-        expirationTimeSeconds: tenYearsInSeconds.toString(),
-        salt                 : generatePseudoRandom256BitNumber().toString(),
+        royaltiesAddress     : accounts[3],
+        expirationTimeSeconds: olderDate.toString(),
+        salt                 : Math.round((Date.now() / 1000)),
         makerAssetAmount     : makerAssetAmount.toString(),
         takerAssetAmount     : takerAssetAmount.toString(),
         makerAssetData,
         takerAssetData,
-        makerFeeAssetData    : NULL_BYTES,
-        takerFeeAssetData    : NULL_BYTES,
-        makerFee             : ZERO.toString(),
-        takerFee             : ZERO.toString(),
+        royaltiesAmount      : takerAssetAmount.times(0.1).toString()
       };
 
       let signedOrder;
       try {
         // newOrder.chainId = String(newOrder.chainId);
         // Generate the order hash and sign it
-        /* signedOrder = await signTyped(
-          provider,
-          newOrder,
-          seller,
-          exchange.address
-        ); */
 
-        signedOrder = await signatureUtils.ecSignOrderAsync(
+        signedOrder = await signTyped(
           provider,
           newOrder,
           seller,
+          exchange.address,
         );
-        // console.log(signedOrder, signedOrder2);
       } catch (e) {
         console.log(e);
       }
@@ -136,9 +127,13 @@ contract('Exchange', (accounts) => {
       }
       assert.isTrue(isApprovedForAll, 'ERC721Proxy must be preapproved on our NFT Token');
 
-      console.log(signedOrder);
+      /* console.log(signedOrder); */
 
-      const { orderHash } = await exchange.getOrderInfo(signedOrder);
+      const orderInfo = await exchange.getOrderInfo(signedOrder);
+
+      const { orderHash } = orderInfo;
+
+      console.log(orderInfo);
 
       assert.isNotEmpty(orderHash);
 
@@ -176,13 +171,11 @@ contract('Exchange', (accounts) => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
-      const buyOrder = await forwarder.fillOrder(
+      const buyOrder = await exchange.fillOrder(
         order.signedOrder,
-        order.signedOrder.takerAssetAmount,
         order.signedOrder.signature,
         {
           from : buyer,
-          // gasPrice: averageGas,
           value: takerAssetAmount,
         }
       );

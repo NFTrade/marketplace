@@ -3,9 +3,8 @@ pragma solidity ^0.8.4;
 import "../Proxies/interfaces/IAssetData.sol";
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
-import "./Libs/LibFillResults.sol";
 import "./Libs/LibOrder.sol";
-import "./MixinAssetProxyDispatcher.sol";
+import "./AssetProxyDispatcher.sol";
 import "./interfaces/IExchangeCore.sol";
 import "./interfaces/IAssetProxyDispatcher.sol";
 
@@ -22,7 +21,7 @@ interface IEtherToken
 
 
 
-contract Forwarder is MixinAssetProxyDispatcher {
+contract Forwarder is AssetProxyDispatcher {
 
     uint256 constant internal MAX_UINT256 = 2**256 - 1;
 
@@ -54,14 +53,14 @@ contract Forwarder is MixinAssetProxyDispatcher {
     )
         public
         payable
-        returns (LibFillResults.FillResults memory fillResults)
+        returns (bool fulfilled)
     {
         require(msg.value == takerAssetAmount, "FORWARDER: wrong value");
         require(order.takerAssetAmount == takerAssetAmount, "FORWARDER: wrong value");
 
         WETH.deposit{ value: msg.value }();
 
-        return EXCHANGE.fillOrderFor(order, takerAssetAmount, signature, msg.sender);
+        return EXCHANGE.fillOrderFor(order, signature, msg.sender);
     }
 
 }

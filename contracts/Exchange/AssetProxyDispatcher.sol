@@ -7,7 +7,7 @@ import "../Proxies/interfaces/IAssetProxy.sol";
 import "./interfaces/IAssetProxyDispatcher.sol";
 
 
-contract MixinAssetProxyDispatcher is
+contract AssetProxyDispatcher is
     Ownable,
     IAssetProxyDispatcher
 {
@@ -26,11 +26,6 @@ contract MixinAssetProxyDispatcher is
     {
         // Ensure that no asset proxy exists with current id.
         bytes4 assetProxyId = IAssetProxy(assetProxy).getProxyId();
-        address currentAssetProxy = _assetProxies[assetProxyId];
-        if (currentAssetProxy != address(0)) {
-            revert('ASSET PROXY: already registered');
-        }
-
         // Add asset proxy and log registration.
         _assetProxies[assetProxyId] = assetProxy;
         emit AssetProxyRegistered(
@@ -51,14 +46,23 @@ contract MixinAssetProxyDispatcher is
         return _assetProxies[assetProxyId];
     }
 
+    function _isERC20Proxy(bytes memory assetData)
+        internal
+        pure
+        returns (bool)
+    {
+        bytes4 assetProxyId = assetData.readBytes4(0);
+        bytes4 erc20ProxyId = IAssetData(address(0)).ERC20Token.selector;
+
+        return assetProxyId == erc20ProxyId;
+    }
+
     /// @dev Forwards arguments to assetProxy and calls `transferFrom`. Either succeeds or throws.
-    /// @param orderHash Hash of the order associated with this transfer.
     /// @param assetData Byte array encoded for the asset.
     /// @param from Address to transfer token from.
     /// @param to Address to transfer token to.
     /// @param amount Amount of token to transfer.
     function _dispatchTransferFrom(
-        bytes32 orderHash,
         bytes memory assetData,
         address from,
         address to,
@@ -83,35 +87,36 @@ contract MixinAssetProxyDispatcher is
                 revert('ASSET PROXY: unknown');
             }
 
-            // Construct the calldata for the transferFrom call.
-            bytes memory proxyCalldata = abi.encodeWithSelector(
-                IAssetProxy(address(0)).transferFrom.selector,
-                assetData,
-                from,
-                to,
-                amount
-            );
+            bool ethPayment = false;
 
-            // Call the asset proxy's transferFrom function with the constructed calldata.
-            (bool didSucceed, bytes memory returnData) = assetProxy.call(proxyCalldata);
+            if (assetProxyId == IAssetData(address(0)).ERC20Token.selector) {
+                address erc20TokenAddress = assetData.readAddress(4);
+                ethPayment = erc20TokenAddress == address(0);
+            }
 
-            // If the transaction did not succeed, revert with the returned data.
-            if (!didSucceed) {
-                revert(toString(assetData));
+            if (ethPayment) {
+                if (address(this).balance < amount) {
+                    revert("ASSET PROXY: insufficient balance");
+                }
+                payable(to).transfer(amount);
+            } else {
+                // Construct the calldata for the transferFrom call.
+                bytes memory proxyCalldata = abi.encodeWithSelector(
+                    IAssetProxy(address(0)).transferFrom.selector,
+                    assetData,
+                    from,
+                    to,
+                    amount
+                );
+
+                // Call the asset proxy's transferFrom function with the constructed calldata.
+                (bool didSucceed, ) = assetProxy.call(proxyCalldata);
+
+                // If the transaction did not succeed, revert with the returned data.
+                if (!didSucceed) {
+                    revert("ASSET PROXY: transfer failed");
+                }
             }
         }
-    }
-
-    function toString(bytes memory data) public pure returns(string memory) {
-        bytes memory alphabet = "0123456789abcdef";
-
-        bytes memory str = new bytes(2 + data.length * 2);
-        str[0] = "0";
-        str[1] = "x";
-        for (uint i = 0; i < data.length; i++) {
-            str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
-            str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
-        }
-        return string(str);
     }
 }

@@ -1,7 +1,6 @@
 pragma solidity ^0.8.4;
 
 import "../Libs/LibOrder.sol";
-import "../Libs/LibFillResults.sol";
 
 
 abstract contract IExchangeCore {
@@ -9,25 +8,21 @@ abstract contract IExchangeCore {
     // Fill event is emitted whenever an order is filled.
     event Fill(
         address indexed makerAddress,         // Address that created the order.
-        address indexed feeRecipientAddress,  // Address that received fees.
+        address indexed royaltiesAddress,     // Address that received fees.
         bytes makerAssetData,                 // Encoded data specific to makerAsset.
         bytes takerAssetData,                 // Encoded data specific to takerAsset.
-        bytes makerFeeAssetData,              // Encoded data specific to makerFeeAsset.
-        bytes takerFeeAssetData,              // Encoded data specific to takerFeeAsset.
         bytes32 indexed orderHash,            // EIP712 hash of order (see LibOrder.getTypedDataHash).
         address takerAddress,                 // Address that filled the order.
         address senderAddress,                // Address that called the Exchange contract (msg.sender).
-        uint256 makerAssetFilledAmount,       // Amount of makerAsset sold by maker and bought by taker.
-        uint256 takerAssetFilledAmount,       // Amount of takerAsset sold by taker and bought by maker.
-        uint256 makerFeePaid,                 // Amount of makerFeeAssetData paid to feeRecipient by maker.
-        uint256 takerFeePaid,                 // Amount of takerFeeAssetData paid to feeRecipient by taker.
+        uint256 makerAssetAmount,             // Amount of makerAsset sold by maker and bought by taker.
+        uint256 takerAssetAmount,             // Amount of takerAsset sold by taker and bought by maker.
+        uint256 royaltiesAmount,              // Amount of royalties paid to royaltiesAddress.
         uint256 protocolFeePaid               // Amount of eth or weth paid to the staking contract.
     );
 
     // Cancel event is emitted whenever an individual order is cancelled.
     event Cancel(
         address indexed makerAddress,         // Address that created the order.
-        address indexed feeRecipientAddress,  // Address that would have recieved fees if order was filled.
         bytes makerAssetData,                 // Encoded data specific to makerAsset.
         bytes takerAssetData,                 // Encoded data specific to takerAsset.
         address senderAddress,                // Address that called the Exchange contract (msg.sender).
@@ -37,12 +32,10 @@ abstract contract IExchangeCore {
     // CancelUpTo event is emitted whenever `cancelOrdersUpTo` is executed succesfully.
     event CancelUpTo(
         address indexed makerAddress,         // Orders cancelled must have been created by this address.
-        address indexed orderSenderAddress,   // Orders cancelled must have a `senderAddress` equal to this address.
-        uint256 orderEpoch                    // Orders with specified makerAddress and senderAddress with a salt less than this value are considered cancelled.
+        uint256 orderEpoch                    // Orders with a salt less than this value are considered cancelled.
     );
 
     /// @dev Cancels all orders created by makerAddress with a salt less than or equal to the targetOrderEpoch
-    ///      and senderAddress equal to msg.sender (or null address if msg.sender == makerAddress).
     /// @param targetOrderEpoch Orders created with a salt less or equal to this value will be cancelled.
     function cancelOrdersUpTo(uint256 targetOrderEpoch)
         virtual
@@ -51,34 +44,31 @@ abstract contract IExchangeCore {
 
     /// @dev Fills the input order.
     /// @param order Order struct containing order specifications.
-    /// @param takerAssetFillAmount Desired amount of takerAsset to sell.
     /// @param signature Proof that order has been created by maker.
-    /// @return fillResults Amounts filled and fees paid by maker and taker.
+    /// @return fulfilled boolean
     function fillOrder(
         LibOrder.Order memory order,
-        uint256 takerAssetFillAmount,
         bytes memory signature
     )
         virtual
         public
         payable
-        returns (LibFillResults.FillResults memory fillResults);
+        returns (bool fulfilled);
 
     /// @dev Fills the input order.
     /// @param order Order struct containing order specifications.
-    /// @param takerAssetFillAmount Desired amount of takerAsset to sell.
     /// @param signature Proof that order has been created by maker.
-    /// @return fillResults Amounts filled and fees paid by maker and taker.
+    /// @param takerAddress address to fulfill the order for / gift.
+    /// @return fulfilled boolean
     function fillOrderFor(
         LibOrder.Order memory order,
-        uint256 takerAssetFillAmount,
         bytes memory signature,
         address takerAddress
     )
         virtual
         public
         payable
-        returns (LibFillResults.FillResults memory fillResults);
+        returns (bool fulfilled);
 
     /// @dev After calling, the order can not be filled anymore.
     /// @param order Order struct containing order specifications.
