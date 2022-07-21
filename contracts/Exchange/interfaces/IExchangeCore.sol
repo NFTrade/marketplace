@@ -48,7 +48,8 @@ abstract contract IExchangeCore {
     /// @return fulfilled boolean
     function fillOrder(
         LibOrder.Order memory order,
-        bytes memory signature
+        bytes memory signature,
+        bytes32 marketIdentifier
     )
         virtual
         public

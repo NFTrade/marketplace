@@ -24,7 +24,8 @@ contract Exchange is
     /// @return fulfilled boolean
     function fillOrder(
         LibOrder.Order memory order,
-        bytes memory signature
+        bytes memory signature,
+        bytes32 marketIdentifier
     )
         override
         public
@@ -35,7 +36,8 @@ contract Exchange is
         fulfilled = _fillOrder(
             order,
             signature,
-            msg.sender
+            msg.sender,
+            marketIdentifier
         );
         return fulfilled;
     }
@@ -48,7 +50,8 @@ contract Exchange is
     function fillOrderFor(
         LibOrder.Order memory order,
         bytes memory signature,
-        address takerAddress
+        address takerAddress,
+        bytes32 marketIdentifier
     )
         override
         public
@@ -59,7 +62,8 @@ contract Exchange is
         fulfilled = _fillOrder(
             order,
             signature,
-            takerAddress
+            takerAddress,
+            marketIdentifier
         );
         return fulfilled;
     }

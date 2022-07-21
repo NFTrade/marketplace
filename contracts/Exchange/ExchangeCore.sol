@@ -6,13 +6,15 @@ import "./interfaces/IExchangeCore.sol";
 import "./AssetProxyDispatcher.sol";
 import "./ProtocolFees.sol";
 import "./SignatureValidator.sol";
+import "./MarketRegistry.sol";
 import "../Proxies/interfaces/IAssetData.sol";
 
 abstract contract ExchangeCore is
     IExchangeCore,
     AssetProxyDispatcher,
     ProtocolFees,
-    SignatureValidator
+    SignatureValidator,
+    MarketRegistry
 {
     using LibSafeMath for uint256;
     using LibBytes for bytes;
@@ -37,7 +39,8 @@ abstract contract ExchangeCore is
     function _fillOrder(
         LibOrder.Order memory order,
         bytes memory signature,
-        address takerAddress
+        address takerAddress,
+        bytes32 marketIdentifier
     )
         internal
         returns (bool fulfilled)
@@ -62,7 +65,8 @@ abstract contract ExchangeCore is
         uint256 protocolFee = _settleOrder(
             orderInfo,
             order,
-            takerAddress
+            takerAddress,
+            marketIdentifier
         );
 
         _notifyOrderFulfilled(order, orderHash, takerAddress, protocolFee);
@@ -226,12 +230,14 @@ abstract contract ExchangeCore is
     function _settleOrder(
         LibOrder.OrderInfo memory orderInfo,
         LibOrder.Order memory order,
-        address takerAddress
+        address takerAddress,
+        bytes32 marketIdentifier
     )
         internal
         returns (uint256 protocolFee)
     {
         address payerAddress = msg.sender;
+        Market memory market = markets[marketIdentifier];
 
         if (orderInfo.orderType == LibOrder.OrderType.LIST) {
             uint256 buyerPayment = order.takerAssetAmount;
@@ -240,6 +246,16 @@ abstract contract ExchangeCore is
             if (protocolFeeCollector != address(0) && protocolFeeMultiplier > 0) {
                 protocolFee = buyerPayment.safeMul(protocolFeeMultiplier).safeDiv(100);
                 buyerPayment = buyerPayment.safeSub(protocolFee);
+                if (market.isActive && market.feeCollector != address(0) && market.feeMultiplier > 0) {
+                    uint256 marketplaceFee = protocolFee.safeMul(market.feeMultiplier).safeDiv(100);
+                    protocolFee = protocolFee.safeSub(marketplaceFee);
+                    _dispatchTransferFrom(
+                        order.takerAssetData,
+                        payerAddress,
+                        market.feeCollector,
+                        marketplaceFee
+                    );
+                }
                 _dispatchTransferFrom(
                     order.takerAssetData,
                     payerAddress,
