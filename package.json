@@ -29,7 +29,6 @@
     "dotenv": "^15.0.0",
     "ethereumjs-util": "^7.1.4",
     "ethers": "^5.5.4",
-    "nftdao-sdk": "file:../nftdao-sdk",
     "truffle-assertions": "^0.9.2"
   },
   "devDependencies": {
