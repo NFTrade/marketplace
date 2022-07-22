@@ -60,7 +60,7 @@ contract Forwarder is AssetProxyDispatcher {
 
         WETH.deposit{ value: msg.value }();
 
-        return EXCHANGE.fillOrderFor(order, signature, msg.sender);
+        return EXCHANGE.fillOrderFor(order, signature, msg.sender, "0x");
     }
 
 }

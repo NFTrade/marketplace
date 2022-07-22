@@ -9,9 +9,19 @@ contract MarketRegistry is Ownable {
         bool isActive;
     }
 
+    bool public distributeMarketFees = true;
+
     mapping(bytes32 => Market) markets;
 
+    function marketDistribution(bool _distributeMarketFees)
+        external
+        onlyOwner
+    {
+        distributeMarketFees = _distributeMarketFees;
+    }
+
     function addMarket(bytes32 identifier, uint256 feeMultiplier, address feeCollector) external onlyOwner {
+        require(feeMultiplier >= 0 && feeMultiplier <= 100, "fee multiplier must be betwen 0 to 100");
         markets[identifier] = Market(feeMultiplier, feeCollector, true);
     }
 

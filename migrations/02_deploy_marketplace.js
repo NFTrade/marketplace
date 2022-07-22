@@ -20,6 +20,7 @@ const deploy = async (deployer, network, accounts) => {
   await deployer.deploy(LibAssetData);
 
   await deployer.link(LibAssetData, ERC1155Proxy);
+  await deployer.link(LibAssetData, Exchange);
 
   await deployer.deploy(ERC20Proxy);
   await deployer.deploy(ERC721Proxy);
@@ -33,9 +34,9 @@ const deploy = async (deployer, network, accounts) => {
   const multiAssetProxy = await MultiAssetProxy.deployed();
   const exchange = await Exchange.deployed();
 
-  await deployer.deploy(NFT, 'NFT Test', 'NFTT');
+  /* await deployer.deploy(NFT, 'NFT Test', 'NFTT');
 
-  const nft = NFT.deployed();
+  const nft = NFT.deployed(); */
 
   await erc20Proxy.addAuthorizedAddress(exchange.address);
   await erc721Proxy.addAuthorizedAddress(exchange.address);
@@ -57,7 +58,7 @@ const deploy = async (deployer, network, accounts) => {
 
   await erc20Proxy.addToken(etherToken.address);
 
-  await deployer.deploy(Forwarder, exchange.address, etherToken.address);
+  // await deployer.deploy(Forwarder, exchange.address, etherToken.address);
 
   /* await exchange.setProtocolFeeMultiplier(new BigNumber(0));
   await exchange.setNFTradeTradeFee(new BigNumber(0));

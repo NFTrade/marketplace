@@ -3,7 +3,6 @@ const ERC721Proxy = artifacts.require('ERC721Proxy');
 const ERC71155Proxy = artifacts.require('ERC1155Proxy');
 const Exchange = artifacts.require('Exchange');
 const LibAssetData = artifacts.require('LibAssetData');
-const Forwarder = artifacts.require('Forwarder');
 const NFT = artifacts.require('NFT');
 const WETH = artifacts.require('WETH');
 const BigNumber = require('bignumber.js');
@@ -32,7 +31,6 @@ contract('Exchange', (accounts) => {
   let exchange;
   let libAssetData;
   let erc721proxy;
-  let forwarder;
   let nft;
   let etherToken;
   let order;
@@ -43,7 +41,6 @@ contract('Exchange', (accounts) => {
   const seller = accounts[2];
   before(async () => {
     exchange = await Exchange.deployed();
-    forwarder = await Forwarder.deployed();
     libAssetData = await LibAssetData.deployed();
 
     etherToken = await WETH.deployed();
@@ -149,8 +146,6 @@ contract('Exchange', (accounts) => {
     });
     /* it('Buying a listed asset', async () => {
       const averageGas = await web3.eth.getGasPrice();
-      const affiliateFeeRecipient = NULL_ADDRESS;
-      const affiliateFee = ZERO;
 
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
       await etherToken.deposit({ from: buyer, value: takerAssetAmount });
@@ -158,7 +153,6 @@ contract('Exchange', (accounts) => {
 
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
-        order.signedOrder.takerAssetAmount,
         order.signedOrder.signature,
         {
           from    : buyer,
@@ -171,9 +165,15 @@ contract('Exchange', (accounts) => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
+      const marketIdentifier = web3.utils.sha3('nftrade');
+
+      await exchange.addMarket(marketIdentifier, 26, accounts[7]);
+      // await exchange.marketDistribution(false);
+
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
+        web3.utils.sha3('nftrade'),
         {
           from : buyer,
           value: takerAssetAmount,
