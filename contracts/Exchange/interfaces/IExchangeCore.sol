@@ -17,7 +17,9 @@ abstract contract IExchangeCore {
         uint256 makerAssetAmount,             // Amount of makerAsset sold by maker and bought by taker.
         uint256 takerAssetAmount,             // Amount of takerAsset sold by taker and bought by maker.
         uint256 royaltiesAmount,              // Amount of royalties paid to royaltiesAddress.
-        uint256 protocolFeePaid               // Amount of eth or weth paid to the staking contract.
+        uint256 protocolFeePaid,              // Amount paid to the protocol.
+        bytes32 marketplaceIdentifier,        // marketplace identifier.
+        uint256 marketplaceFeePaid            // Amount paid to the marketplace brought the taker.
     );
 
     // Cancel event is emitted whenever an individual order is cancelled.
@@ -48,7 +50,8 @@ abstract contract IExchangeCore {
     /// @return fulfilled boolean
     function fillOrder(
         LibOrder.Order memory order,
-        bytes memory signature
+        bytes memory signature,
+        bytes32 marketIdentifier
     )
         virtual
         public
@@ -63,7 +66,8 @@ abstract contract IExchangeCore {
     function fillOrderFor(
         LibOrder.Order memory order,
         bytes memory signature,
-        address takerAddress
+        address takerAddress,
+        bytes32 marketIdentifier
     )
         virtual
         public

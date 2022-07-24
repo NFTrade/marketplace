@@ -2,18 +2,24 @@ pragma solidity ^0.8.4;
 
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
+import "../Utils/LibAssetData.sol";
+import "./Libs/LibOrder.sol";
+import "./Libs/LibEIP712ExchangeDomain.sol";
 import "./interfaces/IExchangeCore.sol";
+import "../Proxies/interfaces/IAssetData.sol";
 import "./AssetProxyDispatcher.sol";
 import "./ProtocolFees.sol";
 import "./SignatureValidator.sol";
-import "../Proxies/interfaces/IAssetData.sol";
+import "./MarketRegistry.sol";
 
 abstract contract ExchangeCore is
     IExchangeCore,
     AssetProxyDispatcher,
     ProtocolFees,
-    SignatureValidator
+    SignatureValidator,
+    MarketRegistry
 {
+    using LibOrder for LibOrder.Order;
     using LibSafeMath for uint256;
     using LibBytes for bytes;
 
@@ -37,13 +43,14 @@ abstract contract ExchangeCore is
     function _fillOrder(
         LibOrder.Order memory order,
         bytes memory signature,
-        address takerAddress
+        address takerAddress,
+        bytes32 marketIdentifier
     )
         internal
         returns (bool fulfilled)
     {
         // Fetch order info
-        LibOrder.OrderInfo memory orderInfo = getOrderInfo(order);
+        LibOrder.OrderInfo memory orderInfo = _getOrderInfo(order);
 
         // Assert that the order is fillable by taker
         _assertFillableOrder(
@@ -58,14 +65,17 @@ abstract contract ExchangeCore is
         // Update state
         filled[orderHash] = true;
 
+        Market memory market = markets[marketIdentifier];
+
         // Settle order
-        uint256 protocolFee = _settleOrder(
+        (uint256 protocolFee, uint256 marketFee) = _settleOrder(
             orderInfo,
             order,
-            takerAddress
+            takerAddress,
+            market
         );
 
-        _notifyOrderFulfilled(order, orderHash, takerAddress, protocolFee);
+        _notifyOrderFulfilled(order, orderHash, takerAddress, protocolFee, marketIdentifier, marketFee);
 
         return filled[orderHash];
     }
@@ -74,7 +84,9 @@ abstract contract ExchangeCore is
         LibOrder.Order memory order,
         bytes32 orderHash,
         address takerAddress,
-        uint256 protocolFee
+        uint256 protocolFee,
+        bytes32 marketIdentifier,
+        uint256 marketFee
     ) internal {
         emit Fill(
             order.makerAddress,
@@ -87,7 +99,9 @@ abstract contract ExchangeCore is
             order.makerAssetAmount,
             order.takerAssetAmount,
             order.royaltiesAmount,
-            protocolFee
+            protocolFee,
+            marketIdentifier,
+            marketFee
         );
     }
 
@@ -98,7 +112,7 @@ abstract contract ExchangeCore is
         internal
     {
         // Fetch current order status
-        LibOrder.OrderInfo memory orderInfo = getOrderInfo(order);
+        LibOrder.OrderInfo memory orderInfo = _getOrderInfo(order);
 
         // Validate context
         _assertValidCancel(order);
@@ -218,6 +232,78 @@ abstract contract ExchangeCore is
         }
     }
 
+    /// @dev Gets information about an order: status, hash, and amount filled.
+    /// @param order Order to gather information on.
+    /// @return orderInfo Information about the order and its state.
+    ///         See LibOrder.OrderInfo for a complete description.
+    function _getOrderInfo(LibOrder.Order memory order)
+        internal
+        view
+        returns (LibOrder.OrderInfo memory orderInfo)
+    {
+        // Compute the order hash
+        orderInfo.orderHash = order.getTypedDataHash(EIP712_EXCHANGE_DOMAIN_HASH);
+
+        bool isTakerAssetDataERC20 = _isERC20Proxy(order.takerAssetData);
+        bool isMakerAssetDataERC20 = _isERC20Proxy(order.makerAssetData);
+
+        if (isTakerAssetDataERC20 && !isMakerAssetDataERC20) {
+            orderInfo.orderType = LibOrder.OrderType.LIST;
+        } else if (!isTakerAssetDataERC20 && isMakerAssetDataERC20) {
+            orderInfo.orderType = LibOrder.OrderType.OFFER;
+        } else if (!isTakerAssetDataERC20 && !isMakerAssetDataERC20) {
+            orderInfo.orderType = LibOrder.OrderType.SWAP;
+        } else {
+            orderInfo.orderType = LibOrder.OrderType.INVALID;
+        }
+
+        // If order.makerAssetAmount is zero, we also reject the order.
+        // While the Exchange contract handles them correctly, they create
+        // edge cases in the supporting infrastructure because they have
+        // an 'infinite' price when computed by a simple division.
+        if (order.makerAssetAmount == 0) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_MAKER_ASSET_AMOUNT;
+            return orderInfo;
+        }
+
+        // If order.takerAssetAmount is zero, then the order will always
+        // be considered filled because 0 == takerAssetAmount == orderTakerAssetFilledAmount
+        // Instead of distinguishing between unfilled and filled zero taker
+        // amount orders, we choose not to support them.
+        if (order.takerAssetAmount == 0) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_TAKER_ASSET_AMOUNT;
+            return orderInfo;
+        }
+
+        // Validate order expiration
+        // solhint-disable-next-line not-rely-on-time
+        if (block.timestamp >= order.expirationTimeSeconds) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.EXPIRED;
+            return orderInfo;
+        }
+
+        // Check if order has been cancelled
+        if (cancelled[orderInfo.orderHash]) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.CANCELLED;
+            return orderInfo;
+        }
+
+        // Check if order has been filled
+        if (filled[orderInfo.orderHash]) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.FILLED;
+            return orderInfo;
+        }
+
+        if (orderEpoch[order.makerAddress] > order.salt) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.CANCELLED;
+            return orderInfo;
+        }
+
+        // All other statuses are ruled out: order is Fillable
+        orderInfo.orderStatus = LibOrder.OrderStatus.FILLABLE;
+        return orderInfo;
+    }
+
 
     /// @dev Settles an order by transferring assets between counterparties.
     /// @param orderInfo The order info struct.
@@ -226,124 +312,97 @@ abstract contract ExchangeCore is
     function _settleOrder(
         LibOrder.OrderInfo memory orderInfo,
         LibOrder.Order memory order,
-        address takerAddress
+        address takerAddress,
+        Market memory market
     )
         internal
-        returns (uint256 protocolFee)
+        returns (uint256 protocolFee, uint256 marketFee)
     {
-        address payerAddress = msg.sender;
+        bytes memory payerAssetData;
+        bytes memory sellerAssetData;
+        address payerAddress;
+        address sellerAddress;
+        uint256 buyerPayment;
+        uint256 sellerAmount;
 
         if (orderInfo.orderType == LibOrder.OrderType.LIST) {
-            uint256 buyerPayment = order.takerAssetAmount;
-
-            // pay protocol fees
-            if (protocolFeeCollector != address(0) && protocolFeeMultiplier > 0) {
-                protocolFee = buyerPayment.safeMul(protocolFeeMultiplier).safeDiv(100);
-                buyerPayment = buyerPayment.safeSub(protocolFee);
-                _dispatchTransferFrom(
-                    order.takerAssetData,
-                    payerAddress,
-                    protocolFeeCollector,
-                    protocolFee
-                );
-            }
-
-            // pay royalties
-            if (order.royaltiesAddress != address(0) && order.royaltiesAmount > 0 ) {
-                buyerPayment = buyerPayment.safeSub(order.royaltiesAmount);
-                _dispatchTransferFrom(
-                    order.takerAssetData,
-                    payerAddress,
-                    order.royaltiesAddress,
-                    order.royaltiesAmount
-                );
-            }
-
-            // pay seller
-            _dispatchTransferFrom(
-                order.takerAssetData,
-                payerAddress,
-                order.makerAddress,
-                buyerPayment
-            );
-
-            // Transfer buyer -> seller (nft / bundle)
-            _dispatchTransferFrom(
-                order.makerAssetData,
-                order.makerAddress,
-                takerAddress,
-                order.makerAssetAmount
-            );
+            payerAssetData = order.takerAssetData;
+            sellerAssetData = order.makerAssetData;
+            payerAddress = msg.sender;
+            sellerAddress = order.makerAddress;
+            buyerPayment = order.takerAssetAmount;
+            sellerAmount = order.makerAssetAmount;
         }
 
-        if (orderInfo.orderType == LibOrder.OrderType.OFFER) {
-            uint256 buyerPayment = order.makerAssetAmount;
-
-            // pay protocol fees
-            if (protocolFeeCollector != address(0) && protocolFeeMultiplier > 0) {
-                protocolFee = buyerPayment.safeMul(protocolFeeMultiplier).safeDiv(100);
-                buyerPayment = buyerPayment.safeSub(protocolFee);
-                _dispatchTransferFrom(
-                    order.makerAssetData,
-                    order.makerAddress,
-                    protocolFeeCollector,
-                    protocolFee
-                );
-            }
-
-            // pay royalties
-            if (order.royaltiesAddress != address(0) && order.royaltiesAmount > 0 ) {
-                buyerPayment = buyerPayment.safeSub(order.royaltiesAmount);
-                _dispatchTransferFrom(
-                    order.makerAssetData,
-                    order.makerAddress,
-                    order.royaltiesAddress,
-                    order.royaltiesAmount
-                );
-            }
-
-            // pay seller // erc20
-            _dispatchTransferFrom(
-                order.makerAssetData,
-                order.makerAddress,
-                msg.sender,
-                buyerPayment
-            );
-
-            // Transfer buyer -> seller (nft / bundle)
-            _dispatchTransferFrom(
-                order.takerAssetData,
-                msg.sender,
-                order.makerAddress,
-                order.takerAssetAmount
-            );
+        if (orderInfo.orderType == LibOrder.OrderType.OFFER || orderInfo.orderType == LibOrder.OrderType.SWAP) {
+            payerAssetData = order.makerAssetData;
+            sellerAssetData = order.takerAssetData;
+            payerAddress = order.makerAddress;
+            sellerAddress = msg.sender;
+            takerAddress = payerAddress;
+            buyerPayment = order.makerAssetAmount;
+            sellerAmount = order.takerAssetAmount;
         }
 
-        if (orderInfo.orderType == LibOrder.OrderType.SWAP) {
-            // pay protocol fees
-            if (protocolFeeCollector != address(0) && protocolFixedFee > 0) {
+
+        // pay protocol fees
+        if (protocolFeeCollector != address(0)) {
+            bytes memory protocolAssetData = payerAssetData;
+            if (orderInfo.orderType == LibOrder.OrderType.SWAP && protocolFixedFee > 0) {
                 protocolFee = protocolFixedFee;
-                payable(protocolFeeCollector).transfer(protocolFee);
+                protocolAssetData = LibAssetData.encodeERC20AssetData(address(0));
+            } else if (protocolFeeMultiplier > 0) {
+                protocolFee = buyerPayment.safeMul(protocolFeeMultiplier).safeDiv(100);
+                buyerPayment = buyerPayment.safeSub(protocolFee);
             }
 
-            // Transfer seller -> buyer (nft / bundle)
-            _dispatchTransferFrom(
-                order.makerAssetData,
-                order.makerAddress,
-                msg.sender,
-                order.makerAssetAmount
-            );
+            if (market.isActive && market.feeCollector != address(0) && market.feeMultiplier > 0 && distributeMarketFees) {
+                marketFee = protocolFee.safeMul(market.feeMultiplier).safeDiv(100);
+                protocolFee = protocolFee.safeSub(marketFee);
+                _dispatchTransferFrom(
+                    protocolAssetData,
+                    payerAddress,
+                    market.feeCollector,
+                    marketFee
+                );
+            }
 
-            // Transfer buyer -> seller (nft / bundle)
             _dispatchTransferFrom(
-                order.takerAssetData,
-                msg.sender,
-                order.makerAddress,
-                order.takerAssetAmount
+                protocolAssetData,
+                payerAddress,
+                protocolFeeCollector,
+                protocolFee
             );
         }
 
-        return protocolFee;
+        // pay royalties
+        if (order.royaltiesAddress != address(0) && order.royaltiesAmount > 0 ) {
+            buyerPayment = buyerPayment.safeSub(order.royaltiesAmount);
+            _dispatchTransferFrom(
+                payerAssetData,
+                payerAddress,
+                order.royaltiesAddress,
+                order.royaltiesAmount
+            );
+        }
+
+        // pay seller // erc20
+        _dispatchTransferFrom(
+            payerAssetData,
+            payerAddress,
+            sellerAddress,
+            buyerPayment
+        );
+
+        // Transfer seller -> buyer (nft / bundle)
+        _dispatchTransferFrom(
+            sellerAssetData,
+            sellerAddress,
+            takerAddress,
+            sellerAmount
+        );
+
+        return (protocolFee, marketFee);
       
     }
 }

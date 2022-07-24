@@ -2,29 +2,25 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Libs/LibEIP712ExchangeDomain.sol";
-import "./Libs/LibOrder.sol";
 import "../Utils/Refundable.sol";
 import "./ExchangeCore.sol";
 
 contract Exchange is
     Ownable,
-    LibEIP712ExchangeDomain,
     Refundable,
     ExchangeCore
 {
-    using LibOrder for LibOrder.Order;
 
-    /// @param chainId Chain ID of the network this contract is deployed on.
     constructor (uint256 chainId) LibEIP712ExchangeDomain(chainId) {}
-
+    
     /// @dev Fills the input order.
     /// @param order Order struct containing order specifications.
     /// @param signature Proof that order has been created by maker.
     /// @return fulfilled boolean
     function fillOrder(
         LibOrder.Order memory order,
-        bytes memory signature
+        bytes memory signature,
+        bytes32 marketIdentifier
     )
         override
         public
@@ -32,12 +28,12 @@ contract Exchange is
         refundFinalBalanceNoReentry
         returns (bool fulfilled)
     {
-        fulfilled = _fillOrder(
+        return _fillOrder(
             order,
             signature,
-            msg.sender
+            msg.sender,
+            marketIdentifier
         );
-        return fulfilled;
     }
 
     /// @dev Fills the input order.
@@ -48,7 +44,8 @@ contract Exchange is
     function fillOrderFor(
         LibOrder.Order memory order,
         bytes memory signature,
-        address takerAddress
+        address takerAddress,
+        bytes32 marketIdentifier
     )
         override
         public
@@ -56,12 +53,12 @@ contract Exchange is
         refundFinalBalanceNoReentry
         returns (bool fulfilled)
     {
-        fulfilled = _fillOrder(
+        return _fillOrder(
             order,
             signature,
-            takerAddress
+            takerAddress,
+            marketIdentifier
         );
-        return fulfilled;
     }
 
     /// @dev After calling, the order can not be filled anymore.
@@ -112,67 +109,7 @@ contract Exchange is
         view
         returns (LibOrder.OrderInfo memory orderInfo)
     {
-        // Compute the order hash
-        orderInfo.orderHash = order.getTypedDataHash(EIP712_EXCHANGE_DOMAIN_HASH);
-
-        bool isTakerAssetDataERC20 = _isERC20Proxy(order.takerAssetData);
-        bool isMakerAssetDataERC20 = _isERC20Proxy(order.makerAssetData);
-
-        if (isTakerAssetDataERC20 && !isMakerAssetDataERC20) {
-            orderInfo.orderType = LibOrder.OrderType.LIST;
-        } else if (!isTakerAssetDataERC20 && isMakerAssetDataERC20) {
-            orderInfo.orderType = LibOrder.OrderType.OFFER;
-        } else if (!isTakerAssetDataERC20 && !isMakerAssetDataERC20) {
-            orderInfo.orderType = LibOrder.OrderType.SWAP;
-        } else {
-            orderInfo.orderType = LibOrder.OrderType.INVALID;
-        }
-
-        // If order.makerAssetAmount is zero, we also reject the order.
-        // While the Exchange contract handles them correctly, they create
-        // edge cases in the supporting infrastructure because they have
-        // an 'infinite' price when computed by a simple division.
-        if (order.makerAssetAmount == 0) {
-            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_MAKER_ASSET_AMOUNT;
-            return orderInfo;
-        }
-
-        // If order.takerAssetAmount is zero, then the order will always
-        // be considered filled because 0 == takerAssetAmount == orderTakerAssetFilledAmount
-        // Instead of distinguishing between unfilled and filled zero taker
-        // amount orders, we choose not to support them.
-        if (order.takerAssetAmount == 0) {
-            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_TAKER_ASSET_AMOUNT;
-            return orderInfo;
-        }
-
-        // Validate order expiration
-        // solhint-disable-next-line not-rely-on-time
-        if (block.timestamp >= order.expirationTimeSeconds) {
-            orderInfo.orderStatus = LibOrder.OrderStatus.EXPIRED;
-            return orderInfo;
-        }
-
-        // Check if order has been cancelled
-        if (cancelled[orderInfo.orderHash]) {
-            orderInfo.orderStatus = LibOrder.OrderStatus.CANCELLED;
-            return orderInfo;
-        }
-
-        // Check if order has been filled
-        if (filled[orderInfo.orderHash]) {
-            orderInfo.orderStatus = LibOrder.OrderStatus.FILLED;
-            return orderInfo;
-        }
-
-        if (orderEpoch[order.makerAddress] > order.salt) {
-            orderInfo.orderStatus = LibOrder.OrderStatus.CANCELLED;
-            return orderInfo;
-        }
-
-        // All other statuses are ruled out: order is Fillable
-        orderInfo.orderStatus = LibOrder.OrderStatus.FILLABLE;
-        return orderInfo;
+        return _getOrderInfo(order);
     }
 
     function returnAllETHToOwner() public payable onlyOwner {
