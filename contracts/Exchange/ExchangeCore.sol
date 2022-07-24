@@ -3,12 +3,14 @@ pragma solidity ^0.8.4;
 import "../Utils/LibBytes.sol";
 import "../Utils/LibSafeMath.sol";
 import "../Utils/LibAssetData.sol";
+import "./Libs/LibOrder.sol";
+import "./Libs/LibEIP712ExchangeDomain.sol";
 import "./interfaces/IExchangeCore.sol";
+import "../Proxies/interfaces/IAssetData.sol";
 import "./AssetProxyDispatcher.sol";
 import "./ProtocolFees.sol";
 import "./SignatureValidator.sol";
 import "./MarketRegistry.sol";
-import "../Proxies/interfaces/IAssetData.sol";
 
 abstract contract ExchangeCore is
     IExchangeCore,
@@ -17,6 +19,7 @@ abstract contract ExchangeCore is
     SignatureValidator,
     MarketRegistry
 {
+    using LibOrder for LibOrder.Order;
     using LibSafeMath for uint256;
     using LibBytes for bytes;
 
@@ -47,7 +50,7 @@ abstract contract ExchangeCore is
         returns (bool fulfilled)
     {
         // Fetch order info
-        LibOrder.OrderInfo memory orderInfo = getOrderInfo(order);
+        LibOrder.OrderInfo memory orderInfo = _getOrderInfo(order);
 
         // Assert that the order is fillable by taker
         _assertFillableOrder(
@@ -109,7 +112,7 @@ abstract contract ExchangeCore is
         internal
     {
         // Fetch current order status
-        LibOrder.OrderInfo memory orderInfo = getOrderInfo(order);
+        LibOrder.OrderInfo memory orderInfo = _getOrderInfo(order);
 
         // Validate context
         _assertValidCancel(order);
@@ -227,6 +230,78 @@ abstract contract ExchangeCore is
         if (order.makerAddress != makerAddress) {
             revert('EXCHANGE: invalid maker');
         }
+    }
+
+    /// @dev Gets information about an order: status, hash, and amount filled.
+    /// @param order Order to gather information on.
+    /// @return orderInfo Information about the order and its state.
+    ///         See LibOrder.OrderInfo for a complete description.
+    function _getOrderInfo(LibOrder.Order memory order)
+        internal
+        view
+        returns (LibOrder.OrderInfo memory orderInfo)
+    {
+        // Compute the order hash
+        orderInfo.orderHash = order.getTypedDataHash(EIP712_EXCHANGE_DOMAIN_HASH);
+
+        bool isTakerAssetDataERC20 = _isERC20Proxy(order.takerAssetData);
+        bool isMakerAssetDataERC20 = _isERC20Proxy(order.makerAssetData);
+
+        if (isTakerAssetDataERC20 && !isMakerAssetDataERC20) {
+            orderInfo.orderType = LibOrder.OrderType.LIST;
+        } else if (!isTakerAssetDataERC20 && isMakerAssetDataERC20) {
+            orderInfo.orderType = LibOrder.OrderType.OFFER;
+        } else if (!isTakerAssetDataERC20 && !isMakerAssetDataERC20) {
+            orderInfo.orderType = LibOrder.OrderType.SWAP;
+        } else {
+            orderInfo.orderType = LibOrder.OrderType.INVALID;
+        }
+
+        // If order.makerAssetAmount is zero, we also reject the order.
+        // While the Exchange contract handles them correctly, they create
+        // edge cases in the supporting infrastructure because they have
+        // an 'infinite' price when computed by a simple division.
+        if (order.makerAssetAmount == 0) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_MAKER_ASSET_AMOUNT;
+            return orderInfo;
+        }
+
+        // If order.takerAssetAmount is zero, then the order will always
+        // be considered filled because 0 == takerAssetAmount == orderTakerAssetFilledAmount
+        // Instead of distinguishing between unfilled and filled zero taker
+        // amount orders, we choose not to support them.
+        if (order.takerAssetAmount == 0) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_TAKER_ASSET_AMOUNT;
+            return orderInfo;
+        }
+
+        // Validate order expiration
+        // solhint-disable-next-line not-rely-on-time
+        if (block.timestamp >= order.expirationTimeSeconds) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.EXPIRED;
+            return orderInfo;
+        }
+
+        // Check if order has been cancelled
+        if (cancelled[orderInfo.orderHash]) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.CANCELLED;
+            return orderInfo;
+        }
+
+        // Check if order has been filled
+        if (filled[orderInfo.orderHash]) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.FILLED;
+            return orderInfo;
+        }
+
+        if (orderEpoch[order.makerAddress] > order.salt) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.CANCELLED;
+            return orderInfo;
+        }
+
+        // All other statuses are ruled out: order is Fillable
+        orderInfo.orderStatus = LibOrder.OrderStatus.FILLABLE;
+        return orderInfo;
     }
 
 

@@ -55,6 +55,7 @@ const deploy = async (deployer, network, accounts) => {
   await exchange.registerAssetProxy(erc20Proxy.address);
   await exchange.registerAssetProxy(erc721Proxy.address);
   await exchange.registerAssetProxy(erc1155Proxy.address);
+  await exchange.registerAssetProxy(multiAssetProxy.address);
 
   await erc20Proxy.addToken(etherToken.address);
 
