@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 import "../Libs/LibOrder.sol";
 
 
-abstract contract ISignatureValidator {
+interface ISignatureValidator {
 
    // Allowed signature types.
     enum SignatureType {
@@ -25,8 +25,7 @@ abstract contract ISignatureValidator {
         address signerAddress,
         bytes memory signature
     )
-        virtual
-        public
+        external
         view
         returns (bool isValid);
 
@@ -38,24 +37,7 @@ abstract contract ISignatureValidator {
         LibOrder.Order memory order,
         bytes memory signature
     )
-        virtual
-        public
-        view
-        returns (bool isValid);
-
-    /// @dev Verifies that an order, with provided order hash, has been signed
-    ///      by the given signer.
-    /// @param order The order.
-    /// @param orderHash The hash of the order.
-    /// @param signature Proof that the hash has been signed by signer.
-    /// @return isValid True if the signature is valid for the given order and signer.
-    function _isValidOrderWithHashSignature(
-        LibOrder.Order memory order,
-        bytes32 orderHash,
-        bytes memory signature
-    )
-        virtual
-        internal
+        external
         view
         returns (bool isValid);
 }
