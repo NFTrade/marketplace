@@ -169,13 +169,13 @@ abstract contract ExchangeCore is
 
         if (orderInfo.orderType == LibOrder.OrderType.LIST) {
             address erc20TokenAddress = order.takerAssetData.readAddress(4);
-            if (erc20TokenAddress == address(0) && msg.value != order.takerAssetAmount) {
+            if (erc20TokenAddress == address(0) && msg.value < order.takerAssetAmount) {
                 revert('EXCHANGE: wrong value sent');
             }
         }
 
         if (orderInfo.orderType == LibOrder.OrderType.SWAP) {
-            if (msg.value != protocolFixedFee) {
+            if (msg.value < protocolFixedFee) {
                 revert('EXCHANGE: wrong value sent');
             }
         }
@@ -272,6 +272,16 @@ abstract contract ExchangeCore is
         // amount orders, we choose not to support them.
         if (order.takerAssetAmount == 0) {
             orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_TAKER_ASSET_AMOUNT;
+            return orderInfo;
+        }
+
+        if (orderInfo.orderType == LibOrder.OrderType.LIST && order.royaltiesAmount > order.takerAssetAmount) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_ROYALTIES;
+            return orderInfo;
+        }
+
+        if (orderInfo.orderType == LibOrder.OrderType.OFFER && order.royaltiesAmount > order.makerAssetAmount) {
+            orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_ROYALTIES;
             return orderInfo;
         }
 
