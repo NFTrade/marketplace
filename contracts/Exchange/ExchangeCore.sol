@@ -23,16 +23,16 @@ abstract contract ExchangeCore is
     using LibSafeMath for uint256;
     using LibBytes for bytes;
 
-    /// @dev Mapping of orderHash => amount of takerAsset already bought by maker
+    /// @dev orderHash => filled
     /// @return boolean the order has been filled
     mapping (bytes32 => bool) public filled;
 
-    /// @dev Mapping of orderHash => cancelled
-    /// @return 0 Whether the order was cancelled.
+    /// @dev orderHash => cancelled
+    /// @return boolean the order has been cancelled
     mapping (bytes32 => bool) public cancelled;
 
-    /// @dev Mapping of makerAddress => lowest salt an order can have in order to be fillable
-    ///      Orders with a salt less than their epoch are considered cancelled
+    /// @dev makerAddress => lowest salt an order can have in order to be fillable
+    /// @return epoc Orders with a salt less than their epoch are considered cancelled
     mapping (address => uint256) public orderEpoch;
 
     /// @dev Fills the input order.
@@ -53,7 +53,7 @@ abstract contract ExchangeCore is
         LibOrder.OrderInfo memory orderInfo = _getOrderInfo(order);
 
         // Assert that the order is fillable by taker
-        _assertFillableOrder(
+        _assertFillable(
             order,
             orderInfo,
             takerAddress,
@@ -68,19 +68,19 @@ abstract contract ExchangeCore is
         Market memory market = markets[marketIdentifier];
 
         // Settle order
-        (uint256 protocolFee, uint256 marketFee) = _settleOrder(
+        (uint256 protocolFee, uint256 marketFee) = _settle(
             orderInfo,
             order,
             takerAddress,
             market
         );
 
-        _notifyOrderFulfilled(order, orderHash, takerAddress, protocolFee, marketIdentifier, marketFee);
+        _notifyFill(order, orderHash, takerAddress, protocolFee, marketIdentifier, marketFee);
 
         return filled[orderHash];
     }
 
-    function _notifyOrderFulfilled(
+    function _notifyFill(
         LibOrder.Order memory order,
         bytes32 orderHash,
         address takerAddress,
@@ -155,7 +155,7 @@ abstract contract ExchangeCore is
     /// @param orderInfo OrderStatus, orderHash, and amount already filled of order.
     /// @param takerAddress Address of order taker.
     /// @param signature Proof that the orders was created by its maker.
-    function _assertFillableOrder(
+    function _assertFillable(
         LibOrder.Order memory order,
         LibOrder.OrderInfo memory orderInfo,
         address takerAddress,
@@ -309,7 +309,7 @@ abstract contract ExchangeCore is
     /// @param orderInfo The order info struct.
     /// @param order Order struct containing order specifications.
     /// @param takerAddress Address selling takerAsset and buying makerAsset.
-    function _settleOrder(
+    function _settle(
         LibOrder.OrderInfo memory orderInfo,
         LibOrder.Order memory order,
         address takerAddress,
@@ -359,7 +359,7 @@ abstract contract ExchangeCore is
             if (market.isActive && market.feeCollector != address(0) && market.feeMultiplier > 0 && distributeMarketFees) {
                 marketFee = protocolFee.safeMul(market.feeMultiplier).safeDiv(100);
                 protocolFee = protocolFee.safeSub(marketFee);
-                _dispatchTransferFrom(
+                _dispatchTransfer(
                     protocolAssetData,
                     payerAddress,
                     market.feeCollector,
@@ -367,7 +367,7 @@ abstract contract ExchangeCore is
                 );
             }
 
-            _dispatchTransferFrom(
+            _dispatchTransfer(
                 protocolAssetData,
                 payerAddress,
                 protocolFeeCollector,
@@ -378,7 +378,7 @@ abstract contract ExchangeCore is
         // pay royalties
         if (order.royaltiesAddress != address(0) && order.royaltiesAmount > 0 ) {
             buyerPayment = buyerPayment.safeSub(order.royaltiesAmount);
-            _dispatchTransferFrom(
+            _dispatchTransfer(
                 payerAssetData,
                 payerAddress,
                 order.royaltiesAddress,
@@ -387,7 +387,7 @@ abstract contract ExchangeCore is
         }
 
         // pay seller // erc20
-        _dispatchTransferFrom(
+        _dispatchTransfer(
             payerAssetData,
             payerAddress,
             sellerAddress,
@@ -395,7 +395,7 @@ abstract contract ExchangeCore is
         );
 
         // Transfer seller -> buyer (nft / bundle)
-        _dispatchTransferFrom(
+        _dispatchTransfer(
             sellerAssetData,
             sellerAddress,
             takerAddress,

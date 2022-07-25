@@ -70,7 +70,7 @@ contract('Exchange', (accounts) => {
   };
 
   describe('Exchange Flow', () => {
-    /* it('List an asset', async () => {
+    it('List an asset', async () => {
       const tokenID = await createNFT(seller);
 
       const makerAssetAmount = new BigNumber(1); // need to populate these
@@ -80,7 +80,7 @@ contract('Exchange', (accounts) => {
       const baseUnitAmount = unit.times(new BigNumber(price));
       const takerAssetAmount = baseUnitAmount;
 
-      const takerAssetData = await libAssetData.encodeERC20AssetData(NULL_ADDRESS);
+      const takerAssetData = await libAssetData.encodeERC20AssetData(etherToken.address);
 
       const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
 
@@ -147,8 +147,8 @@ contract('Exchange', (accounts) => {
       assert.isTrue(isValid);
 
       order = { signedOrder, orderHash };
-    }); */
-    /* it('Buying a listed asset', async () => {
+    });
+    it('Buying a listed asset', async () => {
       const averageGas = await web3.eth.getGasPrice();
 
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
@@ -164,8 +164,8 @@ contract('Exchange', (accounts) => {
           // value   : takerAssetAmount,
         }
       );
-    }); */
-    /* it('Buying a listed asset with eth', async () => {
+    });
+    it('Buying a listed asset with eth', async () => {
       // const averageGas = await web3.eth.getGasPrice();
       const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
 
@@ -178,9 +178,9 @@ contract('Exchange', (accounts) => {
           value: takerAssetAmount,
         }
       );
-    }); */
+    });
 
-    it('offers a swap', async () => {
+    /* it('offers a swap', async () => {
       const makerTokens = await Promise.all([
         await createNFT(seller), await createNFT(seller)
       ]);
@@ -233,8 +233,6 @@ contract('Exchange', (accounts) => {
 
       await nft.setApprovalForAll(erc721proxy.address, true, { from: seller });
 
-      /* console.log(signedOrder); */
-
       const orderInfo = await exchange.getOrderInfo(signedOrder);
 
       const { orderHash } = orderInfo;
@@ -267,6 +265,6 @@ contract('Exchange', (accounts) => {
           value: fixedFee,
         }
       );
-    });
+    }); */
   });
 });

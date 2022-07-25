@@ -62,7 +62,7 @@ contract AssetProxyDispatcher is
     /// @param from Address to transfer token from.
     /// @param to Address to transfer token to.
     /// @param amount Amount of token to transfer.
-    function _dispatchTransferFrom(
+    function _dispatchTransfer(
         bytes memory assetData,
         address from,
         address to,

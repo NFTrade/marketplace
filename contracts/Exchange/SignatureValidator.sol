@@ -91,7 +91,6 @@ abstract contract SignatureValidator is
         bytes32 orderHash,
         bytes memory signature
     )
-        override
         internal
         view
         returns (bool isValid)
