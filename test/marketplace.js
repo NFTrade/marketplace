@@ -16,16 +16,9 @@ const ZERO = new BigNumber(0).toString();
 
 web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 
-BigNumber.config({ DECIMAL_PLACES: 1000 });
-const olderDate = Math.round(Date.now() / 1000) + 3600;
-const MAX_DIGITS_IN_UNSIGNED_256_INT = 78;
+const now = () => Math.round((Date.now() / 1000));
 
-const generatePseudoRandom256BitNumber = () => {
-  const randomNumber = BigNumber.random(MAX_DIGITS_IN_UNSIGNED_256_INT);
-  const factor = new BigNumber(10).pow(MAX_DIGITS_IN_UNSIGNED_256_INT - 1);
-  const randomNumberScaledTo256Bits = randomNumber.times(factor).integerValue();
-  return randomNumberScaledTo256Bits;
-};
+const olderDate = () => (now() + 3600);
 
 contract('Exchange', (accounts) => {
   let exchange;
@@ -33,13 +26,13 @@ contract('Exchange', (accounts) => {
   let erc721proxy;
   let nft;
   let etherToken;
-  let order;
   let marketIdentifier;
   const provider = web3.currentProvider;
 
   const owner = accounts[0];
   const buyer = accounts[1];
   const seller = accounts[2];
+  const royaltiesAddress = accounts[3];
 
   before(async () => {
     exchange = await Exchange.deployed();
@@ -62,125 +55,96 @@ contract('Exchange', (accounts) => {
     // minting a new NFT
     console.log({ async: 'minting a new NFT', from });
     const mintTransaction = await nft.mint(from, 12341, { from });
-    const tokenID = mintTransaction.logs[0].args.tokenId;
+    return mintTransaction.logs[0].args.tokenId;
+  };
 
-    console.log('minted tokenID:', tokenID.toString());
+  const listNFT = async (from, forToken, price, expire) => {
+    const tokenID = await createNFT(from);
+    const takerAssetData = await libAssetData.encodeERC20AssetData(forToken);
+    const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
+    const newOrder = {
+      chainId,
+      exchangeAddress      : exchange.address,
+      makerAddress         : from,
+      takerAddress         : NULL_ADDRESS,
+      senderAddress        : NULL_ADDRESS,
+      royaltiesAddress,
+      expirationTimeSeconds: expire,
+      salt                 : now(),
+      makerAssetAmount     : '1',
+      takerAssetAmount     : web3.utils.toWei(String(price)),
+      makerAssetData,
+      takerAssetData,
+      royaltiesAmount      : web3.utils.toWei(String(price * 0.1))
+    };
 
-    return tokenID;
+    const signedOrder = await signTyped(
+      provider,
+      newOrder,
+      from,
+      exchange.address,
+    );
+
+    await nft
+      .setApprovalForAll(erc721proxy.address, true, { from }); // need to check if already isApprovedForAll
+
+    const orderInfo = await exchange.getOrderInfo(signedOrder);
+
+    const { orderHash } = orderInfo;
+
+    console.log(orderInfo);
+
+    assert.isNotEmpty(orderHash);
+
+    const isValid = await exchange.isValidHashSignature(
+      orderHash,
+      from,
+      signedOrder.signature
+    );
+
+    assert.isTrue(isValid);
+
+    return { signedOrder, orderHash };
   };
 
   describe('Exchange Flow', () => {
-    it('List an asset', async () => {
-      const tokenID = await createNFT(seller);
-
-      const makerAssetAmount = new BigNumber(1); // need to populate these
-
-      const price = '0.01';
-      const unit = new BigNumber(10).pow(18);
-      const baseUnitAmount = unit.times(new BigNumber(price));
-      const takerAssetAmount = baseUnitAmount;
-
-      const takerAssetData = await libAssetData.encodeERC20AssetData(etherToken.address);
-
-      const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
-
-      const newOrder = {
-        chainId,
-        exchangeAddress      : exchange.address,
-        makerAddress         : seller,
-        takerAddress         : NULL_ADDRESS,
-        senderAddress        : NULL_ADDRESS,
-        royaltiesAddress     : accounts[3],
-        expirationTimeSeconds: olderDate.toString(),
-        salt                 : Math.round((Date.now() / 1000)),
-        makerAssetAmount     : makerAssetAmount.toString(),
-        takerAssetAmount     : takerAssetAmount.toString(),
-        makerAssetData,
-        takerAssetData,
-        royaltiesAmount      : takerAssetAmount.times(0.1).toString()
-      };
-
-      let signedOrder;
-      try {
-        // newOrder.chainId = String(newOrder.chainId);
-        // Generate the order hash and sign it
-
-        signedOrder = await signTyped(
-          provider,
-          newOrder,
-          seller,
-          exchange.address,
-        );
-      } catch (e) {
-        console.log(e);
-      }
-
-      let isApprovedForAll = await nft
-        .isApprovedForAll(seller, erc721proxy.address, { from: seller });
-
-      if (!isApprovedForAll) {
-        const ERC721Approval = await nft
-          .setApprovalForAll(erc721proxy.address, true, { from: seller });
-        const { transactionHash } = ERC721Approval;
-        isApprovedForAll = await nft
-          .isApprovedForAll(seller, erc721proxy.address, { from: seller });
-        console.log('approving');
-      } else {
-        console.log('already approved');
-      }
-      assert.isTrue(isApprovedForAll, 'ERC721Proxy must be preapproved on our NFT Token');
-
-      const orderInfo = await exchange.getOrderInfo(signedOrder);
-
-      const { orderHash } = orderInfo;
-
-      console.log(orderInfo);
-
-      assert.isNotEmpty(orderHash);
-
-      const isValid = await exchange.isValidHashSignature(
-        orderHash,
-        seller,
-        signedOrder.signature
-      );
-
-      assert.isTrue(isValid);
-
-      order = { signedOrder, orderHash };
-    });
-    it('Buying a listed asset', async () => {
+    it('Buying a listed asset with weth', async () => {
+      const order = await listNFT(seller, etherToken.address, 0.1, olderDate());
       const averageGas = await web3.eth.getGasPrice();
 
-      const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
-      await etherToken.deposit({ from: buyer, value: takerAssetAmount });
-      await etherToken.approve(ERC20Proxy.address, takerAssetAmount, { from: buyer });
+      const value = order.signedOrder.takerAssetAmount;
+      await etherToken.deposit({ from: buyer, value });
+      await etherToken.approve(ERC20Proxy.address, value, { from: buyer });
 
-      const buyOrder = await exchange.fillOrder(
-        order.signedOrder,
-        order.signedOrder.signature,
-        {
-          from    : buyer,
-          gasPrice: averageGas,
-          // value   : takerAssetAmount,
-        }
-      );
-    });
-    it('Buying a listed asset with eth', async () => {
-      // const averageGas = await web3.eth.getGasPrice();
-      const takerAssetAmount = new BigNumber(order.signedOrder.takerAssetAmount);
+      console.log(order);
 
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
         marketIdentifier,
         {
-          from : buyer,
-          value: takerAssetAmount,
+          from    : buyer,
+          gasPrice: averageGas,
+        }
+      );
+    });
+    it('Buying a listed asset with eth', async () => {
+      // const averageGas = await web3.eth.getGasPrice();
+      const order = await listNFT(seller, NULL_ADDRESS, 0.1, olderDate());
+      const value = order.signedOrder.takerAssetAmount;
+
+      const buyOrder = await exchange.fillOrder(
+        order.signedOrder,
+        order.signedOrder.signature,
+        marketIdentifier,
+        {
+          from: buyer,
+          value,
         }
       );
     });
 
-    /* it('offers a swap', async () => {
+    it('swap', async () => {
       const makerTokens = await Promise.all([
         await createNFT(seller), await createNFT(seller)
       ]);
@@ -198,7 +162,11 @@ contract('Exchange', (accounts) => {
         takerTokens.map((tokenID) => libAssetData.encodeERC721AssetData(nft.address, tokenID))
       );
 
-      const takerAssetData = await libAssetData.encodeMultiAssetData([1, 1], takerAssets);
+      const erc20Data = await libAssetData.encodeERC20AssetData(etherToken.address);
+
+      takerAssets.push(erc20Data);
+
+      const takerAssetData = await libAssetData.encodeMultiAssetData([1, 1, web3.utils.toWei('1')], takerAssets);
 
       const newOrder = {
         chainId,
@@ -207,8 +175,8 @@ contract('Exchange', (accounts) => {
         takerAddress         : NULL_ADDRESS,
         senderAddress        : NULL_ADDRESS,
         royaltiesAddress     : NULL_ADDRESS,
-        expirationTimeSeconds: olderDate.toString(),
-        salt                 : Math.round((Date.now() / 1000)),
+        expirationTimeSeconds: olderDate(),
+        salt                 : now(),
         makerAssetAmount     : '1',
         takerAssetAmount     : '1',
         makerAssetData,
@@ -216,20 +184,12 @@ contract('Exchange', (accounts) => {
         royaltiesAmount      : 0
       };
 
-      let signedOrder;
-      try {
-        // newOrder.chainId = String(newOrder.chainId);
-        // Generate the order hash and sign it
-
-        signedOrder = await signTyped(
-          provider,
-          newOrder,
-          seller,
-          exchange.address,
-        );
-      } catch (e) {
-        console.log(e);
-      }
+      const signedOrder = await signTyped(
+        provider,
+        newOrder,
+        seller,
+        exchange.address,
+      );
 
       await nft.setApprovalForAll(erc721proxy.address, true, { from: seller });
 
@@ -249,11 +209,13 @@ contract('Exchange', (accounts) => {
 
       assert.isTrue(isValid);
 
-      order = { signedOrder, orderHash };
-    });
+      const order = { signedOrder, orderHash };
 
-    it('accept swap', async () => {
+      // SWAP
+
       await nft.setApprovalForAll(erc721proxy.address, true, { from: buyer });
+      await etherToken.deposit({ from: buyer, value: web3.utils.toWei('1') });
+      await etherToken.approve(ERC20Proxy.address, web3.utils.toWei('1'), { from: buyer });
       const fixedFee = web3.utils.toWei('0.1');
       await exchange.setProtocolFixedFee(fixedFee);
       const buyOrder = await exchange.fillOrder(
@@ -265,6 +227,74 @@ contract('Exchange', (accounts) => {
           value: fixedFee,
         }
       );
-    }); */
+    });
+
+    it('offer', async () => {
+      const tokenID = await createNFT(seller);
+
+      const makerAssetData = await libAssetData.encodeERC20AssetData(etherToken.address);
+
+      const takerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
+
+      await etherToken.deposit({ from: buyer, value: web3.utils.toWei('1') });
+      await etherToken.approve(ERC20Proxy.address, web3.utils.toWei('1'), { from: buyer });
+
+      const price = 0.1;
+
+      const newOrder = {
+        chainId,
+        exchangeAddress      : exchange.address,
+        makerAddress         : buyer,
+        takerAddress         : NULL_ADDRESS,
+        senderAddress        : NULL_ADDRESS,
+        royaltiesAddress,
+        expirationTimeSeconds: olderDate(),
+        salt                 : now(),
+        makerAssetAmount     : web3.utils.toWei(String(price)),
+        takerAssetAmount     : '1',
+        makerAssetData,
+        takerAssetData,
+        royaltiesAmount      : web3.utils.toWei(String(0.05))
+      };
+
+      const signedOrder = await signTyped(
+        provider,
+        newOrder,
+        buyer,
+        exchange.address,
+      );
+
+      await nft.setApprovalForAll(erc721proxy.address, true, { from: seller });
+
+      const orderInfo = await exchange.getOrderInfo(signedOrder);
+
+      const { orderHash } = orderInfo;
+
+      console.log(orderInfo);
+
+      assert.isNotEmpty(orderHash);
+
+      const isValid = await exchange.isValidHashSignature(
+        orderHash,
+        buyer,
+        signedOrder.signature
+      );
+
+      assert.isTrue(isValid);
+
+      const order = { signedOrder, orderHash };
+
+      // ACCEPT OFFER
+
+      await nft.setApprovalForAll(erc721proxy.address, true, { from: seller });
+      const buyOrder = await exchange.fillOrder(
+        order.signedOrder,
+        order.signedOrder.signature,
+        marketIdentifier,
+        {
+          from: seller,
+        }
+      );
+    });
   });
 });

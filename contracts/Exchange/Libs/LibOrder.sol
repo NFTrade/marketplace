@@ -32,6 +32,7 @@ library LibOrder {
         INVALID,                     // Default value
         INVALID_MAKER_ASSET_AMOUNT,  // Order does not have a valid maker asset amount
         INVALID_TAKER_ASSET_AMOUNT,  // Order does not have a valid taker asset amount
+        INVALID_ROYALTIES,           // Order does not have a valid royalties
         FILLABLE,                    // Order is fillable
         EXPIRED,                     // Order has already expired
         FILLED,                      // Order is fully filled
