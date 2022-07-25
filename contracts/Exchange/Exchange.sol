@@ -44,8 +44,8 @@ contract Exchange is
     function fillOrderFor(
         LibOrder.Order memory order,
         bytes memory signature,
-        address takerAddress,
-        bytes32 marketIdentifier
+        bytes32 marketIdentifier,
+        address takerAddress
     )
         override
         public
