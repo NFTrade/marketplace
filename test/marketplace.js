@@ -108,7 +108,7 @@ contract('Exchange', (accounts) => {
   };
 
   describe('Exchange Flow', () => {
-    it('Buying a listed asset with weth', async () => {
+    it('Buying a listed asset with erc 20', async () => {
       const order = await listNFT(seller, etherToken.address, 0.1, olderDate());
       const averageGas = await web3.eth.getGasPrice();
 
@@ -137,6 +137,25 @@ contract('Exchange', (accounts) => {
         order.signedOrder,
         order.signedOrder.signature,
         marketIdentifier,
+        {
+          from: buyer,
+          value,
+        }
+      );
+    });
+
+    it('Buying a listed asset with eth as a gift', async () => {
+      const order = await listNFT(seller, NULL_ADDRESS, 0.1, olderDate());
+
+      const value = order.signedOrder.takerAssetAmount;
+
+      console.log(order);
+
+      const buyOrder = await exchange.fillOrderFor(
+        order.signedOrder,
+        order.signedOrder.signature,
+        marketIdentifier,
+        accounts[4],
         {
           from: buyer,
           value,

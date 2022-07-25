@@ -174,6 +174,10 @@ abstract contract ExchangeCore is
             }
         }
 
+        if (orderInfo.orderType != LibOrder.OrderType.LIST && takerAddress != msg.sender) {
+            revert('EXCHANGE: fill order for is only valid for buy now');
+        }
+
         if (orderInfo.orderType == LibOrder.OrderType.SWAP) {
             if (msg.value < protocolFixedFee) {
                 revert('EXCHANGE: wrong value sent');
@@ -257,19 +261,13 @@ abstract contract ExchangeCore is
             orderInfo.orderType = LibOrder.OrderType.INVALID;
         }
 
-        // If order.makerAssetAmount is zero, we also reject the order.
-        // While the Exchange contract handles them correctly, they create
-        // edge cases in the supporting infrastructure because they have
-        // an 'infinite' price when computed by a simple division.
+        // If order.makerAssetAmount is zero the order is invalid
         if (order.makerAssetAmount == 0) {
             orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_MAKER_ASSET_AMOUNT;
             return orderInfo;
         }
 
-        // If order.takerAssetAmount is zero, then the order will always
-        // be considered filled because 0 == takerAssetAmount == orderTakerAssetFilledAmount
-        // Instead of distinguishing between unfilled and filled zero taker
-        // amount orders, we choose not to support them.
+        // If order.takerAssetAmount is zero the order is invalid
         if (order.takerAssetAmount == 0) {
             orderInfo.orderStatus = LibOrder.OrderStatus.INVALID_TAKER_ASSET_AMOUNT;
             return orderInfo;
@@ -286,7 +284,6 @@ abstract contract ExchangeCore is
         }
 
         // Validate order expiration
-        // solhint-disable-next-line not-rely-on-time
         if (block.timestamp >= order.expirationTimeSeconds) {
             orderInfo.orderStatus = LibOrder.OrderStatus.EXPIRED;
             return orderInfo;
