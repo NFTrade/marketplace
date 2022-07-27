@@ -246,7 +246,7 @@ abstract contract ExchangeCore is
         returns (LibOrder.OrderInfo memory orderInfo)
     {
         // Compute the order hash
-        orderInfo.orderHash = order.getTypedDataHash(EIP712_EXCHANGE_DOMAIN_HASH);
+        orderInfo.orderHash = order.getTypedDataHash(DOMAIN_HASH);
 
         bool isTakerAssetDataERC20 = _isERC20Proxy(order.takerAssetData);
         bool isMakerAssetDataERC20 = _isERC20Proxy(order.makerAssetData);

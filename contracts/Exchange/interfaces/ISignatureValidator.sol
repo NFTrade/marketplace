@@ -11,8 +11,6 @@ interface ISignatureValidator {
         Invalid,                     // 0x01
         EIP712,                      // 0x02
         EthSign,                     // 0x03
-        Wallet,                      // 0x04
-        EIP1271Wallet,               // 0x05
         NSignatureTypes              // 0x06, number of signature types. Always leave at end.
     }
 
