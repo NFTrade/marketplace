@@ -1,18 +1,13 @@
 pragma solidity ^0.8.4;
 
 import "../Utils/LibBytes.sol";
-import "../Utils/LibEIP1271.sol";
 import "./Libs/LibOrder.sol";
 import "./Libs/LibEIP712ExchangeDomain.sol";
-import "./interfaces/IWallet.sol";
-import "./interfaces/IEIP1271Wallet.sol";
 import "./interfaces/ISignatureValidator.sol";
-import "./interfaces/IEIP1271Data.sol";
 
 
 abstract contract SignatureValidator is
     LibEIP712ExchangeDomain,
-    LibEIP1271,
     ISignatureValidator
 {
     using LibBytes for bytes;
@@ -30,11 +25,10 @@ abstract contract SignatureValidator is
     )
         override
         public
-        view
+        pure
         returns (bool isValid)
     {
         SignatureType signatureType = _readValidSignatureType(
-            hash,
             signerAddress,
             signature
         );
@@ -81,12 +75,11 @@ abstract contract SignatureValidator is
         bytes memory signature
     )
         internal
-        view
+        pure
         returns (bool isValid)
     {
         address signerAddress = order.makerAddress;
         SignatureType signatureType = _readValidSignatureType(
-            orderHash,
             signerAddress,
             signature
         );
@@ -108,7 +101,7 @@ abstract contract SignatureValidator is
         bytes memory signature
     )
         private
-        view
+        pure
         returns (bool isValid)
     {
         // invalid signature.
@@ -159,7 +152,6 @@ abstract contract SignatureValidator is
 
     /// @dev Reads the `SignatureType` from the end of a signature and validates it.
     function _readValidSignatureType(
-        bytes32 hash,
         address signerAddress,
         bytes memory signature
     )
