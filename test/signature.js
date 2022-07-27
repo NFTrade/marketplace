@@ -1,11 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 const {
-  fromRpcSig, bufferToHex, toBuffer, keccak256,
+  fromRpcSig, bufferToHex, toBuffer,
 } = require('ethereumjs-util');
-
-const BigNumber = require('bignumber.js');
-
-const ethers = require('ethers');
 
 const EIP712Domain = [
   {
@@ -92,13 +88,13 @@ const send = (provider, data) => new Promise((resolve, reject) => provider.sendA
  */
 const signTypedData = async (provider, address, payload) => {
   const typedData = {
-    id    : '44',
+    id: '44',
     params: [
       address,
       payload,
     ],
     jsonrpc: '2.0',
-    method : 'eth_signTypedData',
+    method: 'eth_signTypedData',
   };
   return send(provider, typedData);
 };
@@ -113,12 +109,12 @@ module.exports = async (provider, order, from, verifyingContract) => {
       Order,
     },
     domain: {
-      name   : 'Nifty Exchange',
+      name: 'Nifty Exchange',
       version: '2.0',
       chainId: order.chainId,
       verifyingContract,
     },
-    message    : order,
+    message: order,
     primaryType: 'Order',
   };
 

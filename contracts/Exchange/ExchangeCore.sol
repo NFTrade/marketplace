@@ -44,6 +44,7 @@ abstract contract ExchangeCore is
         LibOrder.Order memory order,
         bytes memory signature,
         address takerAddress,
+        address giftAddress,
         bytes32 marketIdentifier
     ) internal returns (bool fulfilled) {
         // Fetch order info
@@ -64,6 +65,7 @@ abstract contract ExchangeCore is
             orderInfo,
             order,
             takerAddress,
+            giftAddress,
             market
         );
 
@@ -170,12 +172,12 @@ abstract contract ExchangeCore is
             }
         }
 
-        if (
-            orderInfo.orderType != LibOrder.OrderType.LIST &&
-            takerAddress != msg.sender
-        ) {
-            revert("EXCHANGE: fill order for is only valid for buy now");
-        }
+        // if (
+        //     orderInfo.orderType != LibOrder.OrderType.LIST &&
+        //     takerAddress != msg.sender
+        // ) {
+        //     revert("EXCHANGE: fill order for is only valid for buy now");
+        // }
 
         if (orderInfo.orderType == LibOrder.OrderType.SWAP) {
             if (msg.value < protocolFixedFee) {
@@ -321,27 +323,37 @@ abstract contract ExchangeCore is
     /// @dev Settles an order by transferring assets between counterparties.
     /// @param orderInfo The order info struct.
     /// @param order Order struct containing order specifications.
-    /// @param takerAddress Address selling takerAsset and buying makerAsset.
+    /// @param fulfillerAddress Address selling takerAsset and buying makerAsset.
+    /// @param giftAddress Address that receives makerAsset.
     function _settle(
         LibOrder.OrderInfo memory orderInfo,
         LibOrder.Order memory order,
-        address takerAddress,
+        address fulfillerAddress,
+        address giftAddress,
         Market memory market
     ) internal returns (uint256 protocolFee, uint256 marketFee) {
         bytes memory payerAssetData;
         bytes memory sellerAssetData;
         address payerAddress;
-        address sellerAddress;
-        address recieiverAddress;
         uint256 buyerPayment;
         uint256 sellerAmount;
+
+        address ercFrom;
+        address ercTo;
+
+        address nftFrom;
+        address nftTo;
 
         if (orderInfo.orderType == LibOrder.OrderType.LIST) {
             payerAssetData = order.takerAssetData;
             sellerAssetData = order.makerAssetData;
-            payerAddress = msg.sender;
-            sellerAddress = order.makerAddress;
-            recieiverAddress = takerAddress;
+
+            ercFrom = fulfillerAddress;
+            ercTo = order.makerAddress;
+
+            nftFrom = order.makerAddress;
+            nftTo = giftAddress != address(0) ? giftAddress : fulfillerAddress;
+            // recieiverAddress = takerAddress;
             buyerPayment = order.takerAssetAmount;
             sellerAmount = order.makerAssetAmount;
         }
@@ -350,12 +362,15 @@ abstract contract ExchangeCore is
             orderInfo.orderType == LibOrder.OrderType.OFFER ||
             orderInfo.orderType == LibOrder.OrderType.SWAP
         ) {
+            ercFrom = order.makerAddress;
+            ercTo = giftAddress != address(0) ? giftAddress : fulfillerAddress;
+
+            nftFrom = fulfillerAddress;
+            nftTo = order.makerAddress;
+
             payerAssetData = order.makerAssetData;
             sellerAssetData = order.takerAssetData;
             payerAddress = order.makerAddress;
-            recieiverAddress = takerAddress;
-            sellerAddress = msg.sender;
-            takerAddress = payerAddress;
             buyerPayment = order.makerAssetAmount;
             sellerAmount = order.takerAssetAmount;
         }
@@ -415,37 +430,11 @@ abstract contract ExchangeCore is
             );
         }
 
-        // // from a (maker) to b (fulfiller) \ c (gift address)
-        // _dispatchTransfer(
-        //     payerAssetData,
-        //     sellerAddress,
-        //     recieiverAddress,
-        //     buyerPayment
-        // );
+        // transfer erc20
+        _dispatchTransfer(payerAssetData, ercFrom, ercTo, buyerPayment);
 
-        // // from b (fulfiller) to a (maker) \ c (gift address)
-        // _dispatchTransfer(
-        //     sellerAssetData,
-        //     sellerAddress,
-        //     recieiverAddress,
-        //     sellerAmount
-        // );
-
-        // pay seller // erc20
-        _dispatchTransfer(
-            payerAssetData,
-            payerAddress,
-            sellerAddress,
-            buyerPayment
-        );
-
-        // Transfer seller -> buyer (nft / bundle)
-        _dispatchTransfer(
-            sellerAssetData,
-            sellerAddress,
-            recieiverAddress,
-            sellerAmount
-        );
+        // Transfer nft / bundle
+        _dispatchTransfer(sellerAssetData, nftFrom, nftTo, sellerAmount);
 
         return (protocolFee, marketFee);
     }

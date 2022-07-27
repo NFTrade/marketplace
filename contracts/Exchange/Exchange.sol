@@ -5,14 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../Utils/Refundable.sol";
 import "./ExchangeCore.sol";
 
-contract Exchange is
-    Ownable,
-    Refundable,
-    ExchangeCore
-{
+contract Exchange is Ownable, Refundable, ExchangeCore {
+    constructor(uint256 chainId) LibEIP712ExchangeDomain(chainId) {}
 
-    constructor (uint256 chainId) LibEIP712ExchangeDomain(chainId) {}
-    
     /// @dev Fills the input order.
     /// @param order Order struct containing order specifications.
     /// @param signature Proof that order has been created by maker.
@@ -22,18 +17,20 @@ contract Exchange is
         bytes memory signature,
         bytes32 marketIdentifier
     )
-        override
         public
         payable
+        override
         refundFinalBalanceNoReentry
         returns (bool fulfilled)
     {
-        return _fillOrder(
-            order,
-            signature,
-            msg.sender,
-            marketIdentifier
-        );
+        return
+            _fillOrder(
+                order,
+                signature,
+                msg.sender,
+                address(0),
+                marketIdentifier
+            );
     }
 
     /// @dev Fills the input order.
@@ -45,28 +42,31 @@ contract Exchange is
         LibOrder.Order memory order,
         bytes memory signature,
         bytes32 marketIdentifier,
-        address takerAddress
+        address takerAddress,
+        address giftAddress
     )
-        override
         public
         payable
+        override
         refundFinalBalanceNoReentry
         returns (bool fulfilled)
     {
-        return _fillOrder(
-            order,
-            signature,
-            takerAddress,
-            marketIdentifier
-        );
+        return
+            _fillOrder(
+                order,
+                signature,
+                takerAddress,
+                giftAddress,
+                marketIdentifier
+            );
     }
 
     /// @dev After calling, the order can not be filled anymore.
     /// @param order Order struct containing order specifications.
     function cancelOrder(LibOrder.Order memory order)
-        override
         public
         payable
+        override
         refundFinalBalanceNoReentry
     {
         _cancelOrder(order);
@@ -76,9 +76,9 @@ contract Exchange is
     ///      and senderAddress equal to msg.sender (or null address if msg.sender == makerAddress).
     /// @param targetOrderEpoch Orders created with a salt less or equal to this value will be cancelled.
     function cancelOrdersUpTo(uint256 targetOrderEpoch)
-        override
         external
         payable
+        override
         refundFinalBalanceNoReentry
     {
         address makerAddress = msg.sender;
@@ -88,15 +88,12 @@ contract Exchange is
 
         // Ensure orderEpoch is monotonically increasing
         if (newOrderEpoch <= oldOrderEpoch) {
-            revert('EXCHANGE: order epoch error');
+            revert("EXCHANGE: order epoch error");
         }
 
         // Update orderEpoch
         orderEpoch[makerAddress] = newOrderEpoch;
-        emit CancelUpTo(
-            makerAddress,
-            newOrderEpoch
-        );
+        emit CancelUpTo(makerAddress, newOrderEpoch);
     }
 
     /// @dev Gets information about an order: status, hash, and amount filled.
@@ -104,9 +101,9 @@ contract Exchange is
     /// @return orderInfo Information about the order and its state.
     ///         See LibOrder.OrderInfo for a complete description.
     function getOrderInfo(LibOrder.Order memory order)
-        override
         public
         view
+        override
         returns (LibOrder.OrderInfo memory orderInfo)
     {
         return _getOrderInfo(order);
@@ -118,7 +115,11 @@ contract Exchange is
 
     function returnERC20ToOwner(address ERC20Token) public payable onlyOwner {
         IERC20 CustomToken = IERC20(ERC20Token);
-        CustomToken.transferFrom(address(this), msg.sender, CustomToken.balanceOf(address(this)));
+        CustomToken.transferFrom(
+            address(this),
+            msg.sender,
+            CustomToken.balanceOf(address(this))
+        );
     }
 
     receive() external payable {}

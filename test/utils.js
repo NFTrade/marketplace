@@ -54,9 +54,9 @@ const advanceTime = (time) => new Promise((resolve, reject) => {
   web3.currentProvider.send(
     {
       jsonrpc: '2.0',
-      method : 'evm_increaseTime',
-      params : [time],
-      id     : new Date().getTime(),
+      method: 'evm_increaseTime',
+      params: [time],
+      id: new Date().getTime(),
     },
     (err, result) => {
       if (err) {
@@ -71,8 +71,8 @@ const advanceBlock = () => new Promise((resolve, reject) => {
   web3.currentProvider.send(
     {
       jsonrpc: '2.0',
-      method : 'evm_mine',
-      id     : new Date().getTime(),
+      method: 'evm_mine',
+      id: new Date().getTime(),
     },
     (err, result) => {
       if (err) {
@@ -89,8 +89,8 @@ const takeSnapshot = () => new Promise((resolve, reject) => {
   web3.currentProvider.send(
     {
       jsonrpc: '2.0',
-      method : 'evm_snapshot',
-      id     : new Date().getTime(),
+      method: 'evm_snapshot',
+      id: new Date().getTime(),
     },
     (err, snapshotId) => {
       if (err) {
@@ -105,9 +105,9 @@ const revertToSnapShot = (id) => new Promise((resolve, reject) => {
   web3.currentProvider.send(
     {
       jsonrpc: '2.0',
-      method : 'evm_revert',
-      params : [id],
-      id     : new Date().getTime(),
+      method: 'evm_revert',
+      params: [id],
+      id: new Date().getTime(),
     },
     (err, result) => {
       if (err) {
