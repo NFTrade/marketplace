@@ -1,7 +1,7 @@
 pragma solidity ^0.8.4;
 
 import "./LibBytes.sol";
-import "../Proxies/interfaces/IAssetData.sol";
+import "../interfaces/IAssetData.sol";
 
 
 library LibAssetData {

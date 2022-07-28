@@ -1,10 +1,10 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "../Utils/LibBytes.sol";
-import "../Utils/LibAssetData.sol";
-import "../Utils/LibSafeMath.sol";
-import "../Authorize/Authorizable.sol";
+import "./libs/LibBytes.sol";
+import "./libs/LibAssetData.sol";
+import "./libs/LibSafeMath.sol";
+import "./Authorizable.sol";
 import "./interfaces/IAssetProxy.sol";
 
 

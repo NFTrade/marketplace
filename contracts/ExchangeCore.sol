@@ -1,12 +1,12 @@
 pragma solidity ^0.8.4;
 
-import "../Utils/LibBytes.sol";
-import "../Utils/LibSafeMath.sol";
-import "../Utils/LibAssetData.sol";
-import "./Libs/LibOrder.sol";
-import "./Libs/LibEIP712ExchangeDomain.sol";
+import "./libs/LibBytes.sol";
+import "./libs/LibSafeMath.sol";
+import "./libs/LibAssetData.sol";
+import "./libs/LibOrder.sol";
+import "./libs/LibEIP712ExchangeDomain.sol";
 import "./interfaces/IExchangeCore.sol";
-import "../Proxies/interfaces/IAssetData.sol";
+import "./interfaces/IAssetData.sol";
 import "./AssetProxyDispatcher.sol";
 import "./ProtocolFees.sol";
 import "./SignatureValidator.sol";

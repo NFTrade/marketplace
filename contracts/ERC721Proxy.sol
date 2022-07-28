@@ -1,8 +1,8 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "../Utils/LibBytes.sol";
-import "../Authorize/Authorizable.sol";
+import "./libs/LibBytes.sol";
+import "./Authorizable.sol";
 import "./interfaces/IAssetProxy.sol";
 
 contract ERC721Proxy is

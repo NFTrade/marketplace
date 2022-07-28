@@ -1,9 +1,9 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../Utils/LibBytes.sol";
-import "../Proxies/interfaces/IAssetData.sol";
-import "../Proxies/interfaces/IAssetProxy.sol";
+import "./libs/LibBytes.sol";
+import "./interfaces/IAssetData.sol";
+import "./interfaces/IAssetProxy.sol";
 import "./interfaces/IAssetProxyDispatcher.sol";
 
 

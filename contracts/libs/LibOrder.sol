@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-import "../../Utils/LibEIP712.sol";
+import "./LibEIP712.sol";
 
 
 library LibOrder {

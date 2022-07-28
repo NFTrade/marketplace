@@ -1,8 +1,8 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../Utils/LibBytes.sol";
-import "../Authorize/Authorizable.sol";
+import "./libs/LibBytes.sol";
+import "./Authorizable.sol";
 import "./interfaces/IAssetProxy.sol";
 
 contract ERC20Proxy is

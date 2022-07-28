@@ -4,10 +4,7 @@ const ERC1155Proxy = artifacts.require('ERC1155Proxy');
 const MultiAssetProxy = artifacts.require('MultiAssetProxy');
 const Exchange = artifacts.require('Exchange');
 const LibAssetData = artifacts.require('LibAssetData');
-const Forwarder = artifacts.require('Forwarder');
 const WETH = artifacts.require('WETH');
-const NFT = artifacts.require('NFT');
-const BigNumber = require('bignumber.js');
 
 const deploy = async (deployer, network, accounts) => {
   // Chain ID
@@ -34,10 +31,6 @@ const deploy = async (deployer, network, accounts) => {
   const multiAssetProxy = await MultiAssetProxy.deployed();
   const exchange = await Exchange.deployed();
 
-  /* await deployer.deploy(NFT, 'NFT Test', 'NFTT');
-
-  const nft = NFT.deployed(); */
-
   await erc20Proxy.addAuthorizedAddress(exchange.address);
   await erc721Proxy.addAuthorizedAddress(exchange.address);
   await erc1155Proxy.addAuthorizedAddress(exchange.address);
@@ -58,12 +51,6 @@ const deploy = async (deployer, network, accounts) => {
   await exchange.registerAssetProxy(multiAssetProxy.address);
 
   await erc20Proxy.addToken(etherToken.address);
-
-  // await deployer.deploy(Forwarder, exchange.address, etherToken.address);
-
-  /* await exchange.setProtocolFeeMultiplier(new BigNumber(0));
-  await exchange.setNFTradeTradeFee(new BigNumber(0));
-  await exchange.setNFTradeFeeMultiplier(new BigNumber(0)); */
 
   console.log('done running migrations');
 };

@@ -1,8 +1,8 @@
 pragma solidity ^0.8.4;
 
-import "../Authorize/Authorizable.sol";
-import "../Exchange/interfaces/IAssetProxyDispatcher.sol";
-import "../Proxies/interfaces/IAssetProxy.sol";
+import "./Authorizable.sol";
+import "./interfaces/IAssetProxyDispatcher.sol";
+import "./interfaces/IAssetProxy.sol";
 
 
 contract MultiAssetProxy is
