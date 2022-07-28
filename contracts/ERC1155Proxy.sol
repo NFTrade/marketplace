@@ -1,9 +1,9 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./libs/LibBytes.sol";
 import "./libs/LibAssetData.sol";
-import "./libs/LibSafeMath.sol";
 import "./Authorizable.sol";
 import "./interfaces/IAssetProxy.sol";
 
@@ -13,7 +13,7 @@ contract ERC1155Proxy is
     IAssetProxy
 {
     using LibBytes for bytes;
-    using LibSafeMath for uint256;
+    using SafeMath for uint256;
 
     // Id of this proxy.
     bytes4 constant internal PROXY_ID = bytes4(keccak256("ERC1155Assets(address,uint256[],uint256[],bytes)"));
@@ -54,7 +54,7 @@ contract ERC1155Proxy is
             // to avoid copying over `ids` or `data`. This is possible if they are
             // identical to `values` and the offsets for each are pointing to the
             // same location in the ABI encoded calldata.
-            scaledValues[i] = values[i].safeMul(amount);
+            scaledValues[i] = values[i].mul(amount);
         }
 
         // Execute `safeBatchTransferFrom` call

@@ -17,7 +17,6 @@ contract AssetProxyDispatcher is
     mapping (bytes4 => address) internal _assetProxies;
 
     /// @dev Registers an asset proxy to its asset proxy id.
-    ///      Once an asset proxy is registered, it cannot be unregistered.
     /// @param assetProxy Address of new asset proxy to register.
     function registerAssetProxy(address assetProxy)
         override

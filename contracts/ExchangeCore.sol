@@ -1,7 +1,7 @@
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./libs/LibBytes.sol";
-import "./libs/LibSafeMath.sol";
 import "./libs/LibAssetData.sol";
 import "./libs/LibOrder.sol";
 import "./libs/LibEIP712ExchangeDomain.sol";
@@ -20,7 +20,7 @@ abstract contract ExchangeCore is
     MarketRegistry
 {
     using LibOrder for LibOrder.Order;
-    using LibSafeMath for uint256;
+    using SafeMath for uint256;
     using LibBytes for bytes;
 
     /// @dev orderHash => filled
@@ -359,13 +359,13 @@ abstract contract ExchangeCore is
                 protocolFee = protocolFixedFee;
                 protocolAssetData = LibAssetData.encodeERC20AssetData(address(0));
             } else if (protocolFeeMultiplier > 0) {
-                protocolFee = buyerPayment.safeMul(protocolFeeMultiplier).safeDiv(100);
-                buyerPayment = buyerPayment.safeSub(protocolFee);
+                protocolFee = buyerPayment.mul(protocolFeeMultiplier).div(100);
+                buyerPayment = buyerPayment.sub(protocolFee);
             }
 
             if (market.isActive && market.feeCollector != address(0) && market.feeMultiplier > 0 && distributeMarketFees) {
-                marketFee = protocolFee.safeMul(market.feeMultiplier).safeDiv(100);
-                protocolFee = protocolFee.safeSub(marketFee);
+                marketFee = protocolFee.mul(market.feeMultiplier).div(100);
+                protocolFee = protocolFee.sub(marketFee);
                 _dispatchTransfer(
                     protocolAssetData,
                     payerAddress,
@@ -384,7 +384,7 @@ abstract contract ExchangeCore is
 
         // pay royalties
         if (order.royaltiesAddress != address(0) && order.royaltiesAmount > 0 ) {
-            buyerPayment = buyerPayment.safeSub(order.royaltiesAmount);
+            buyerPayment = buyerPayment.sub(order.royaltiesAmount);
             _dispatchTransfer(
                 payerAssetData,
                 payerAddress,
