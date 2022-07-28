@@ -12,14 +12,14 @@ library LibEIP712 {
     //     "address verifyingContract",
     //     ")"
     // ))
-    bytes32 constant internal _EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+    bytes32 constant internal SCHEMA_HASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
 
     /// @dev Calculates a EIP712 domain separator.
     /// @param name The EIP712 domain name.
     /// @param version The EIP712 domain version.
     /// @param verifyingContract The EIP712 verifying contract.
     /// @return result EIP712 domain separator.
-    function hashEIP712Domain(
+    function hashDomain(
         string memory name,
         string memory version,
         uint256 chainId,
@@ -29,11 +29,11 @@ library LibEIP712 {
         pure
         returns (bytes32 result)
     {
-        bytes32 schemaHash = _EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH;
+        bytes32 schemaHash = SCHEMA_HASH;
 
         // Assembly for more efficient computing:
         // keccak256(abi.encodePacked(
-        //     _EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH,
+        //     SCHEMA_HASH,
         //     keccak256(bytes(name)),
         //     keccak256(bytes(version)),
         //     chainId,
@@ -62,11 +62,11 @@ library LibEIP712 {
     }
 
     /// @dev Calculates EIP712 encoding for a hash struct with a given domain hash.
-    /// @param eip712DomainHash Hash of the domain domain separator data, computed
+    /// @param domainHash Hash of the domain domain separator data, computed
     ///                         with getDomainHash().
     /// @param hashStruct The EIP712 hash struct.
     /// @return result EIP712 hash applied to the given EIP712 Domain.
-    function hashEIP712Message(bytes32 eip712DomainHash, bytes32 hashStruct)
+    function hashMessage(bytes32 domainHash, bytes32 hashStruct)
         internal
         pure
         returns (bytes32 result)
@@ -83,7 +83,7 @@ library LibEIP712 {
             let memPtr := mload(64)
 
             mstore(memPtr, 0x1901000000000000000000000000000000000000000000000000000000000000)  // EIP191 header
-            mstore(add(memPtr, 2), eip712DomainHash)                                            // EIP712 domain hash
+            mstore(add(memPtr, 2), domainHash)                                            // EIP712 domain hash
             mstore(add(memPtr, 34), hashStruct)                                                 // Hash of struct
 
             // Compute hash

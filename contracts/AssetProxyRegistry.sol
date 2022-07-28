@@ -4,12 +4,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./libs/LibBytes.sol";
 import "./interfaces/IAssetData.sol";
 import "./interfaces/IAssetProxy.sol";
-import "./interfaces/IAssetProxyDispatcher.sol";
+import "./interfaces/IAssetProxyRegistry.sol";
 
 
-contract AssetProxyDispatcher is
+contract AssetProxyRegistry is
     Ownable,
-    IAssetProxyDispatcher
+    IAssetProxyRegistry
 {
     using LibBytes for bytes;
 

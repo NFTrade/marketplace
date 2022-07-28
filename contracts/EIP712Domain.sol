@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-import "./LibEIP712.sol";
+import "./libs/LibEIP712.sol";
 
 
 contract LibEIP712ExchangeDomain {
@@ -22,7 +22,7 @@ contract LibEIP712ExchangeDomain {
         uint256 chainId
     )
     {
-        DOMAIN_HASH = LibEIP712.hashEIP712Domain(
+        DOMAIN_HASH = LibEIP712.hashDomain(
             DOMAIN_NAME,
             DOMAIN_VERSION,
             chainId,

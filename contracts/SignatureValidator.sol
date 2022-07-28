@@ -2,7 +2,7 @@ pragma solidity ^0.8.4;
 
 import "./libs/LibBytes.sol";
 import "./libs/LibOrder.sol";
-import "./libs/LibEIP712ExchangeDomain.sol";
+import "./EIP712Domain.sol";
 import "./interfaces/ISignatureValidator.sol";
 
 

@@ -4,20 +4,20 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./libs/LibBytes.sol";
 import "./libs/LibAssetData.sol";
 import "./libs/LibOrder.sol";
-import "./libs/LibEIP712ExchangeDomain.sol";
 import "./interfaces/IExchangeCore.sol";
 import "./interfaces/IAssetData.sol";
-import "./AssetProxyDispatcher.sol";
+import "./AssetProxyRegistry.sol";
+import "./EIP712Domain.sol";
 import "./ProtocolFees.sol";
 import "./SignatureValidator.sol";
-import "./MarketRegistry.sol";
+import "./MarketplaceRegistry.sol";
 
 abstract contract ExchangeCore is
     IExchangeCore,
-    AssetProxyDispatcher,
+    AssetProxyRegistry,
     ProtocolFees,
     SignatureValidator,
-    MarketRegistry
+    MarketplaceRegistry
 {
     using LibOrder for LibOrder.Order;
     using SafeMath for uint256;
@@ -44,7 +44,7 @@ abstract contract ExchangeCore is
         LibOrder.Order memory order,
         bytes memory signature,
         address takerAddress,
-        bytes32 marketIdentifier
+        bytes32 marketplaceIdentifier
     )
         internal
         returns (bool fulfilled)
@@ -65,17 +65,17 @@ abstract contract ExchangeCore is
         // Update state
         filled[orderHash] = true;
 
-        Market memory market = markets[marketIdentifier];
+        Marketplace memory marketplace = marketplaces[marketplaceIdentifier];
 
         // Settle order
-        (uint256 protocolFee, uint256 marketFee) = _settle(
+        (uint256 protocolFee, uint256 marketplaceFee) = _settle(
             orderInfo,
             order,
             takerAddress,
-            market
+            marketplace
         );
 
-        _notifyFill(order, orderHash, takerAddress, protocolFee, marketIdentifier, marketFee);
+        _notifyFill(order, orderHash, takerAddress, protocolFee, marketplaceIdentifier, marketplaceFee);
 
         return filled[orderHash];
     }
@@ -85,8 +85,8 @@ abstract contract ExchangeCore is
         bytes32 orderHash,
         address takerAddress,
         uint256 protocolFee,
-        bytes32 marketIdentifier,
-        uint256 marketFee
+        bytes32 marketplaceIdentifier,
+        uint256 marketplaceFee
     ) internal {
         emit Fill(
             order.makerAddress,
@@ -100,8 +100,8 @@ abstract contract ExchangeCore is
             order.takerAssetAmount,
             order.royaltiesAmount,
             protocolFee,
-            marketIdentifier,
-            marketFee
+            marketplaceIdentifier,
+            marketplaceFee
         );
     }
 
@@ -320,10 +320,10 @@ abstract contract ExchangeCore is
         LibOrder.OrderInfo memory orderInfo,
         LibOrder.Order memory order,
         address takerAddress,
-        Market memory market
+        Marketplace memory marketplace
     )
         internal
-        returns (uint256 protocolFee, uint256 marketFee)
+        returns (uint256 protocolFee, uint256 marketplaceFee)
     {
         bytes memory payerAssetData;
         bytes memory sellerAssetData;
@@ -363,14 +363,14 @@ abstract contract ExchangeCore is
                 buyerPayment = buyerPayment.sub(protocolFee);
             }
 
-            if (market.isActive && market.feeCollector != address(0) && market.feeMultiplier > 0 && distributeMarketFees) {
-                marketFee = protocolFee.mul(market.feeMultiplier).div(100);
-                protocolFee = protocolFee.sub(marketFee);
+            if (marketplace.isActive && marketplace.feeCollector != address(0) && marketplace.feeMultiplier > 0 && distributeMarketplaceFees) {
+                marketplaceFee = protocolFee.mul(marketplace.feeMultiplier).div(100);
+                protocolFee = protocolFee.sub(marketplaceFee);
                 _dispatchTransfer(
                     protocolAssetData,
                     payerAddress,
-                    market.feeCollector,
-                    marketFee
+                    marketplace.feeCollector,
+                    marketplaceFee
                 );
             }
 
@@ -409,7 +409,7 @@ abstract contract ExchangeCore is
             sellerAmount
         );
 
-        return (protocolFee, marketFee);
+        return (protocolFee, marketplaceFee);
       
     }
 }

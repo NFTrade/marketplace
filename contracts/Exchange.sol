@@ -20,7 +20,7 @@ contract Exchange is
     function fillOrder(
         LibOrder.Order memory order,
         bytes memory signature,
-        bytes32 marketIdentifier
+        bytes32 marketplaceIdentifier
     )
         override
         public
@@ -32,7 +32,7 @@ contract Exchange is
             order,
             signature,
             msg.sender,
-            marketIdentifier
+            marketplaceIdentifier
         );
     }
 
@@ -44,7 +44,7 @@ contract Exchange is
     function fillOrderFor(
         LibOrder.Order memory order,
         bytes memory signature,
-        bytes32 marketIdentifier,
+        bytes32 marketplaceIdentifier,
         address takerAddress
     )
         override
@@ -57,7 +57,7 @@ contract Exchange is
             order,
             signature,
             takerAddress,
-            marketIdentifier
+            marketplaceIdentifier
         );
     }
 

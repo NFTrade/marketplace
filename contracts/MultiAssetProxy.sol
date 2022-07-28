@@ -1,13 +1,13 @@
 pragma solidity ^0.8.4;
 
 import "./Authorizable.sol";
-import "./interfaces/IAssetProxyDispatcher.sol";
+import "./interfaces/IAssetProxyRegistry.sol";
 import "./interfaces/IAssetProxy.sol";
 
 
 contract MultiAssetProxy is
     Authorizable,
-    IAssetProxyDispatcher
+    IAssetProxyRegistry
 {
     // Id of this proxy.
     bytes4 constant internal PROXY_ID = bytes4(keccak256("MultiAsset(uint256[],bytes[])"));

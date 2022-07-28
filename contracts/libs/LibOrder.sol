@@ -79,7 +79,7 @@ library LibOrder {
         pure
         returns (bytes32 orderHash)
     {
-        orderHash = LibEIP712.hashEIP712Message(
+        orderHash = LibEIP712.hashMessage(
             eip712ExchangeDomainHash,
             order.getStructHash()
         );
