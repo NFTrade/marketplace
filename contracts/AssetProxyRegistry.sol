@@ -1,15 +1,15 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../Utils/LibBytes.sol";
-import "../Proxies/interfaces/IAssetData.sol";
-import "../Proxies/interfaces/IAssetProxy.sol";
-import "./interfaces/IAssetProxyDispatcher.sol";
+import "./libs/LibBytes.sol";
+import "./interfaces/IAssetData.sol";
+import "./interfaces/IAssetProxy.sol";
+import "./interfaces/IAssetProxyRegistry.sol";
 
 
-contract AssetProxyDispatcher is
+contract AssetProxyRegistry is
     Ownable,
-    IAssetProxyDispatcher
+    IAssetProxyRegistry
 {
     using LibBytes for bytes;
 
@@ -17,7 +17,6 @@ contract AssetProxyDispatcher is
     mapping (bytes4 => address) internal _assetProxies;
 
     /// @dev Registers an asset proxy to its asset proxy id.
-    ///      Once an asset proxy is registered, it cannot be unregistered.
     /// @param assetProxy Address of new asset proxy to register.
     function registerAssetProxy(address assetProxy)
         override

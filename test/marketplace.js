@@ -26,7 +26,7 @@ contract('Exchange', (accounts) => {
   let erc721proxy;
   let nft;
   let etherToken;
-  let marketIdentifier;
+  let marketplaceIdentifier;
   const provider = web3.currentProvider;
 
   const owner = accounts[0];
@@ -43,12 +43,12 @@ contract('Exchange', (accounts) => {
 
     nft = await NFT.new('NFT Test', 'NFTT');
 
-    marketIdentifier = web3.utils.sha3('nftrade');
+    marketplaceIdentifier = web3.utils.sha3('nftrade');
 
     await exchange.setProtocolFeeMultiplier(new BigNumber(2));
     await exchange.setProtocolFeeCollectorAddress(accounts[5]);
-    await exchange.addMarket(marketIdentifier, 26, accounts[7]);
-    // await exchange.marketDistribution(false);
+    await exchange.registerMarketplace(marketplaceIdentifier, 26, accounts[7]);
+    // await exchange.marketplaceDistribution(false);
   });
 
   const createNFT = async (from) => {
@@ -121,7 +121,7 @@ contract('Exchange', (accounts) => {
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
-        marketIdentifier,
+        marketplaceIdentifier,
         {
           from    : buyer,
           gasPrice: averageGas,
@@ -136,7 +136,7 @@ contract('Exchange', (accounts) => {
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
-        marketIdentifier,
+        marketplaceIdentifier,
         {
           from: buyer,
           value,
@@ -154,7 +154,7 @@ contract('Exchange', (accounts) => {
       const buyOrder = await exchange.fillOrderFor(
         order.signedOrder,
         order.signedOrder.signature,
-        marketIdentifier,
+        marketplaceIdentifier,
         accounts[4],
         {
           from: buyer,
@@ -240,7 +240,7 @@ contract('Exchange', (accounts) => {
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
-        marketIdentifier,
+        marketplaceIdentifier,
         {
           from : buyer,
           value: fixedFee,
@@ -309,7 +309,7 @@ contract('Exchange', (accounts) => {
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
-        marketIdentifier,
+        marketplaceIdentifier,
         {
           from: seller,
         }

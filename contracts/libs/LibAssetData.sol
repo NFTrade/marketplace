@@ -1,7 +1,7 @@
 pragma solidity ^0.8.4;
 
 import "./LibBytes.sol";
-import "../Proxies/interfaces/IAssetData.sol";
+import "../interfaces/IAssetData.sol";
 
 
 library LibAssetData {
@@ -24,8 +24,7 @@ library LibAssetData {
             assetProxyId == IAssetData(address(0)).ERC20Token.selector ||
             assetProxyId == IAssetData(address(0)).ERC721Token.selector ||
             assetProxyId == IAssetData(address(0)).ERC1155Assets.selector ||
-            assetProxyId == IAssetData(address(0)).MultiAsset.selector ||
-            assetProxyId == IAssetData(address(0)).StaticCall.selector,
+            assetProxyId == IAssetData(address(0)).MultiAsset.selector,
             "WRONG_PROXY_ID"
         );
         return assetProxyId;
@@ -231,56 +230,6 @@ library LibAssetData {
         // solhint-enable indent
     }
 
-    /// @dev Encode StaticCall asset data into the format described in the AssetProxy contract specification.
-    /// @param staticCallTargetAddress Target address of StaticCall.
-    /// @param staticCallData Data that will be passed to staticCallTargetAddress in the StaticCall.
-    /// @param expectedReturnDataHash Expected Keccak-256 hash of the StaticCall return data.
-    /// @return assetData AssetProxy-compliant asset data describing the set of assets.
-    function encodeStaticCallAssetData(
-        address staticCallTargetAddress,
-        bytes memory staticCallData,
-        bytes32 expectedReturnDataHash
-    )
-        public
-        pure
-        returns (bytes memory assetData)
-    {
-        assetData = abi.encodeWithSelector(
-            IAssetData(address(0)).StaticCall.selector,
-            staticCallTargetAddress,
-            staticCallData,
-            expectedReturnDataHash
-        );
-        return assetData;
-    }
-
-    /// @dev Decode StaticCall asset data from the format described in the AssetProxy contract specification.
-    /// @param assetData AssetProxy-compliant asset data describing a StaticCall asset
-    /// @return assetProxyId The StaticCall AssetProxy identifier, the target address of the StaticCAll, the data to be
-    /// passed to the target address, and the expected Keccak-256 hash of the static call return data.
-    function decodeStaticCallAssetData(bytes memory assetData)
-        public
-        pure
-        returns (
-            bytes4 assetProxyId,
-            address staticCallTargetAddress,
-            bytes memory staticCallData,
-            bytes32 expectedReturnDataHash
-        )
-    {
-        assetProxyId = assetData.readBytes4(0);
-
-        require(
-            assetProxyId == IAssetData(address(0)).StaticCall.selector,
-            "WRONG_PROXY_ID"
-        );
-
-        (staticCallTargetAddress, staticCallData, expectedReturnDataHash) = abi.decode(
-            assetData.slice(4, assetData.length),
-            (address, bytes, bytes32)
-        );
-    }
-
     /// @dev Reverts if assetData is not of a valid format for its given proxy id.
     /// @param assetData AssetProxy compliant asset data.
     function revertIfInvalidAssetData(bytes memory assetData)
@@ -297,8 +246,6 @@ library LibAssetData {
             decodeERC1155AssetData(assetData);
         } else if (assetProxyId == IAssetData(address(0)).MultiAsset.selector) {
             decodeMultiAssetData(assetData);
-        } else if (assetProxyId == IAssetData(address(0)).StaticCall.selector) {
-            decodeStaticCallAssetData(assetData);
         } else {
             revert("WRONG_PROXY_ID");
         }

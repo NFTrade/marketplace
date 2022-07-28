@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-import "../../Utils/LibEIP712.sol";
+import "./LibEIP712.sol";
 
 
 library LibOrder {
@@ -79,7 +79,7 @@ library LibOrder {
         pure
         returns (bytes32 orderHash)
     {
-        orderHash = LibEIP712.hashEIP712Message(
+        orderHash = LibEIP712.hashMessage(
             eip712ExchangeDomainHash,
             order.getStructHash()
         );

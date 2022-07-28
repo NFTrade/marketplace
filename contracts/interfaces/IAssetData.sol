@@ -43,15 +43,4 @@ interface IAssetData {
         bytes[] calldata nestedAssetData
     )
         external;
-
-    /// @dev Function signature for encoding StaticCall assetData.
-    /// @param staticCallTargetAddress Address that will execute the staticcall.
-    /// @param staticCallData Data that will be executed via staticcall on the staticCallTargetAddress.
-    /// @param expectedReturnDataHash Keccak-256 hash of the expected staticcall return data.
-    function StaticCall(
-        address staticCallTargetAddress,
-        bytes calldata staticCallData,
-        bytes32 expectedReturnDataHash
-    )
-        external;
 }
