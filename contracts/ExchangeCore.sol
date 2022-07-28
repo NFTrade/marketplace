@@ -2,7 +2,6 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./libs/LibBytes.sol";
-import "./libs/LibAssetData.sol";
 import "./libs/LibOrder.sol";
 import "./interfaces/IExchangeCore.sol";
 import "./interfaces/IAssetData.sol";
@@ -357,7 +356,7 @@ abstract contract ExchangeCore is
             bytes memory protocolAssetData = payerAssetData;
             if (orderInfo.orderType == LibOrder.OrderType.SWAP && protocolFixedFee > 0) {
                 protocolFee = protocolFixedFee;
-                protocolAssetData = LibAssetData.encodeERC20AssetData(address(0));
+                protocolAssetData = abi.encodeWithSelector(IAssetData(address(0)).ERC20Token.selector, address(0));
             } else if (protocolFeeMultiplier > 0) {
                 protocolFee = buyerPayment.mul(protocolFeeMultiplier).div(100);
                 buyerPayment = buyerPayment.sub(protocolFee);

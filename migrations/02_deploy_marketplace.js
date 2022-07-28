@@ -16,9 +16,6 @@ const deploy = async (deployer, network, accounts) => {
 
   await deployer.deploy(LibAssetData);
 
-  await deployer.link(LibAssetData, ERC1155Proxy);
-  await deployer.link(LibAssetData, Exchange);
-
   await deployer.deploy(ERC20Proxy);
   await deployer.deploy(ERC721Proxy);
   await deployer.deploy(ERC1155Proxy);

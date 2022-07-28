@@ -61,6 +61,8 @@ contract('Exchange', (accounts) => {
   const listNFT = async (from, forToken, price, expire) => {
     const tokenID = await createNFT(from);
     const takerAssetData = await libAssetData.encodeERC20AssetData(forToken);
+    const id = await libAssetData.decodeAssetProxyId(takerAssetData);
+    console.log(id);
     const makerAssetData = await libAssetData.encodeERC721AssetData(nft.address, tokenID);
     const newOrder = {
       chainId,

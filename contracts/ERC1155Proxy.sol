@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./libs/LibBytes.sol";
-import "./libs/LibAssetData.sol";
 import "./Authorizable.sol";
 import "./interfaces/IAssetProxy.sol";
 
@@ -38,12 +37,14 @@ contract ERC1155Proxy is
         // solhint-disable indent
 
         (
-            bytes4 assetProxyId,
             address erc1155TokenAddress,
             uint256[] memory ids,
             uint256[] memory values,
             bytes memory data
-        ) = LibAssetData.decodeERC1155AssetData(assetData);
+        ) = abi.decode(
+            assetData.sliceDestructive(4, assetData.length),
+            (address, uint256[], uint256[], bytes)
+        );
         // solhint-enable indent
 
         // Scale values up by `amount`

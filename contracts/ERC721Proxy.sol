@@ -34,7 +34,7 @@ contract ERC721Proxy is
         );
         // solhint-enable indent
 
-        // Execute `safeBatchTransferFrom` call
+        // Execute `transferFrom` call
         // Either succeeds or throws
         IERC721(erc721TokenAddress).transferFrom(
             from,
