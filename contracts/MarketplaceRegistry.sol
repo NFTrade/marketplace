@@ -25,7 +25,7 @@ contract MarketplaceRegistry is Ownable {
     }
 
     function registerMarketplace(bytes32 identifier, uint256 feeMultiplier, address feeCollector) external onlyOwner {
-        require(feeMultiplier >= 0 && feeMultiplier <= 100, "fee multiplier must be betwen 0 to 100");
+        require(feeMultiplier <= 100, "fee multiplier must be betwen 0 to 100");
         marketplaces[identifier] = Marketplace(feeMultiplier, feeCollector, true);
         emit MarketplaceRegister(identifier, feeMultiplier, feeCollector);
     }
@@ -43,7 +43,7 @@ contract MarketplaceRegistry is Ownable {
         uint256 feeMultiplier,
         address feeCollector
     ) external onlyOwner {
-        require(feeMultiplier >= 0 && feeMultiplier <= 100, "fee multiplier must be betwen 0 to 100");
+        require(feeMultiplier <= 100, "fee multiplier must be betwen 0 to 100");
         marketplaces[identifier].feeMultiplier = feeMultiplier;
         marketplaces[identifier].feeCollector = feeCollector;
         emit MarketplaceSetFees(identifier, feeMultiplier, feeCollector);
