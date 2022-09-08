@@ -1,4 +1,5 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
+
 require('dotenv').config();
 
 module.exports = {
@@ -8,10 +9,6 @@ module.exports = {
       port      : 8545,
       network_id: '*',
     },
-  },
-
-  mocha: {
-    // reporter: 'eth-gas-reporter',
   },
 
   solc: {
@@ -26,4 +23,8 @@ module.exports = {
       version: '0.8.4',
     },
   },
+
+  plugins: [
+    'solidity-coverage'
+  ]
 };

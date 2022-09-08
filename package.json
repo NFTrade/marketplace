@@ -19,7 +19,7 @@
     "lint": "npm run lint:sol && npm run lint:js",
     "security": "docker run --rm --memory=3g -v $(pwd):/tmp -w \"/tmp/\" mythril/myth --truffle",
     "describe": "surya describe contracts/*.sol",
-    "coverage": "solidity-coverage"
+    "coverage": "truffle run coverage"
   },
   "keywords": [],
   "dependencies": {
@@ -39,8 +39,7 @@
     "eslint-plugin-import": "^2.22.1",
     "eth-gas-reporter": "^0.1.12",
     "ethlint": "1.2.3",
-    "ganache-cli": "6.3.0",
-    "solidity-coverage": "0.6.0-beta.3",
+    "solidity-coverage": "0.8.0-beta.1",
     "surya": "0.2.8",
     "truffle": "^5.3.3",
     "web3-provider-engine": "^16.0.1"

@@ -11,8 +11,6 @@ const signTyped = require('./signature');
 const chainId = 5777;
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
-const NULL_BYTES = '0x';
-const ZERO = new BigNumber(0).toString();
 
 web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 

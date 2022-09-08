@@ -1,12 +1,10 @@
 module.exports = {
-    skipFiles: [
-        "./contracts/test/SampleDetailedERC20.sol",
-        "./contracts/test/SampleERC721.sol",
-        "./contracts/test/SamplePlainERC20.sol",
-        "./contracts/mocks/BILDDataTest.sol",
-        "./contracts/mocks/FeesMock.sol",
-        "./contracts/mocks/FixidityLibMock.sol",
-        "./contracts/mocks/LogarithmLibMock.sol",
-        "./contracts/mocks/UtilsLibMock.sol",
-    ]
+    client: require('ganache-cli'),
+    providerOptions: {
+        host: "localhost",
+        port: 8545,
+        network_id: "1",
+        networkCheckTimeout: 60000,
+        fork: "https://rpc.ankr.com/eth",
+    }
 };
