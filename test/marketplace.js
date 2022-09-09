@@ -123,8 +123,8 @@ contract('Exchange', (accounts) => {
         order.signedOrder.signature,
         marketplaceIdentifier,
         {
-          from    : buyer,
-          gasPrice: averageGas,
+          from: buyer,
+          // gasPrice: averageGas,
         }
       );
     });
