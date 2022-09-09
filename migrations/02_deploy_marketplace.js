@@ -4,7 +4,7 @@ const ERC1155Proxy = artifacts.require('ERC1155Proxy');
 const MultiAssetProxy = artifacts.require('MultiAssetProxy');
 const Exchange = artifacts.require('Exchange');
 const LibAssetData = artifacts.require('LibAssetData');
-const WETH = artifacts.require('WETH');
+const WETH = artifacts.require('MockWETH');
 
 const deploy = async (deployer, network, accounts) => {
   // Chain ID
