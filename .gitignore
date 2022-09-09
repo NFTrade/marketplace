@@ -4,5 +4,5 @@ bin/
 build
 node_modules
 .env
-coverage.jdon
+coverage.json
 coverage
