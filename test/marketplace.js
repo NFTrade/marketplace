@@ -1,7 +1,7 @@
 const ERC20Proxy = artifacts.require('ERC20Proxy');
 const ERC721Proxy = artifacts.require('ERC721Proxy');
 const ERC1155Proxy = artifacts.require('ERC1155Proxy');
-const Exchange = artifacts.require('Exchange');
+const NiftyProtocol = artifacts.require('NiftyProtocol');
 const LibAssetData = artifacts.require('LibAssetData');
 const NFT = artifacts.require('MockNFT');
 const NFT1155 = artifacts.require('MockNFT1155');
@@ -21,7 +21,7 @@ const now = () => Math.round((Date.now() / 1000));
 
 const olderDate = () => (now() + 3600);
 
-contract('Exchange', (accounts) => {
+contract('NiftyProtocol', (accounts) => {
   let exchange;
   let libAssetData;
   let erc721proxy;
@@ -38,7 +38,7 @@ contract('Exchange', (accounts) => {
   const royaltiesAddress = accounts[3];
 
   before(async () => {
-    exchange = await Exchange.deployed();
+    exchange = await NiftyProtocol.deployed();
     libAssetData = await LibAssetData.deployed();
 
     etherToken = await WETH.deployed();
