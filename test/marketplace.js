@@ -198,6 +198,8 @@ contract('NiftyProtocol', (accounts) => {
       const order = await listNFT(seller, NULL_ADDRESS, 0.1, olderDate());
       const value = order.signedOrder.takerAssetAmount;
 
+      const royaltiesBalanceBefore = await web3.eth.getBalance(royaltiesAddress);
+
       const buyOrder = await exchange.fillOrder(
         order.signedOrder,
         order.signedOrder.signature,
@@ -207,6 +209,9 @@ contract('NiftyProtocol', (accounts) => {
           value,
         }
       );
+
+      const royaltiesBalanceAfter = await web3.eth.getBalance(royaltiesAddress);
+      assert.equal(new BigNumber(royaltiesBalanceAfter).minus(royaltiesBalanceBefore).toFixed(), web3.utils.toWei(String(0.1 * 0.1)));
     });
 
     it('Buying a listed asset with eth as a gift', async () => {
